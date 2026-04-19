@@ -795,15 +795,33 @@ async function showDetail(reqId) {
       row('Contract Period', (f.PeriodType||'') + (f.PeriodStart ? ' | ' + f.PeriodStart + ' ~ ' + (f.PeriodEnd||'No end') : '')) +
       row('Payment Term', f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-');
 
-    // Contract Template & Compliance
-    if (f.ContractTemplate || f.BizTermsReviewed || f.DDPerformed || f.PersonalInfo || f.SMRCompliance || f.FinalSignOff) {
-      html += sec('3. Contract Template & Compliance');
-      if (f.ContractTemplate) html += row('Contract Template', f.ContractTemplate);
-      if (f.BizTermsReviewed) html += row('Business/Commercial Terms Reviewed', f.BizTermsReviewed.toUpperCase());
-      if (f.DDPerformed)      html += row('Compliance Due Diligence', f.DDPerformed.toUpperCase() + (f.DDId ? ' (ID: ' + f.DDId + ')' : ''));
-      if (f.PersonalInfo)     html += row('Personal Information Disclosed', f.PersonalInfo.toUpperCase() + (f.StdContract ? ' / Standard Contract: ' + f.StdContract.toUpperCase() : ''));
-      if (f.SMRCompliance)    html += row('Signing Party (SMR Compliance)', f.SMRCompliance.toUpperCase());
-      if (f.FinalSignOff)     html += row('Final Signing Off', f.FinalSignOff);
+    // ── 3. Contract Template ──
+    if (f.ContractTemplate) {
+      html += sec('3. Contract Template');
+      const tmplItems = (f.ContractTemplate || '').split(';').map(s => s.trim()).filter(Boolean);
+      const tmplHtml = tmplItems.map(item =>
+        '<div style="padding:3px 0;font-size:13px;display:flex;align-items:flex-start;gap:6px">' +
+        '<span style="color:#0078d4;flex-shrink:0">✓</span><span>' + item + '</span></div>'
+      ).join('');
+      html += '<div style="padding:6px 0">' + (tmplHtml || '-') + '</div>';
+    }
+
+    // ── 4. Compliance / Final Check ──
+    const hasCompliance = f.BizTermsReviewed || f.DDPerformed || f.PersonalInfo || f.SMRCompliance || f.FinalSignOff;
+    if (hasCompliance) {
+      html += sec('4. Compliance / Final Check');
+      const yn = v => v ? '<span style="font-weight:600;color:' + (v.toLowerCase()==='yes'?'#107c10':'#a4262c') + '">' + v.toUpperCase() + '</span>' : '-';
+      html += row('Business / commercial terms reviewed', yn(f.BizTermsReviewed));
+      if (f.DDPerformed) {
+        const ddDetail = f.DDPerformed.toLowerCase()==='yes' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(DD ID: ' + f.DDId + ')</span>' : (f.DDPerformed.toLowerCase()==='no' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(' + f.DDId + ')</span>' : '');
+        html += row('Is Compliance Due Diligence performed?', yn(f.DDPerformed) + ddDetail);
+      }
+      if (f.PersonalInfo) {
+        const stdDetail = f.StdContract ? ' &nbsp;→&nbsp; Standard contract: ' + yn(f.StdContract.split(' ')[0]) : '';
+        html += row('Is personal Information disclosed?', yn(f.PersonalInfo) + stdDetail);
+      }
+      html += row('Signing Party Designation (SMR)', yn(f.SMRCompliance));
+      if (f.FinalSignOff) html += row('Final signing off', '<span style="font-size:13px">' + f.FinalSignOff + '</span>');
     }
 
     // Approvals
@@ -900,14 +918,26 @@ async function submitForm() {
     const periodType = ['chk-lim','chk-auto','chk-noend'].filter(id => document.getElementById(id).checked)
       .map(id => ({ 'chk-lim':'Limited duration','chk-auto':'Auto-renewal','chk-noend':'No end date' })[id]).join(', ');
 
-    // Contract Template 체크박스 수집
-    const tmplChecked = [];
-    document.querySelectorAll('#tab-form .tmpl-main input[type="checkbox"]:checked').forEach(cb => {
-      tmplChecked.push(cb.parentElement.textContent.trim().replace(/\s+/g,' '));
+    // Contract Template 체크박스 수집 (상위/하위 구분)
+    const tmplMain = [];
+    document.querySelectorAll('#tab-form .tmpl-main').forEach(label => {
+      const cb = label.querySelector('input[type="checkbox"]');
+      if (cb && cb.checked) {
+        const name = label.childNodes[label.childNodes.length-1].textContent.trim();
+        tmplMain.push(name);
+      }
     });
-    document.querySelectorAll('#tab-form .sub-list input[type="checkbox"]:checked').forEach(cb => {
-      tmplChecked.push(cb.parentElement.textContent.trim().replace(/\s+/g,' '));
+    const tmplSub = [];
+    document.querySelectorAll('#tab-form .sub-list label').forEach(label => {
+      const cb = label.querySelector('input[type="checkbox"]');
+      if (cb && cb.checked) {
+        const txt = label.textContent.trim().replace(/\s+/g,' ');
+        // Other template title 포함
+        const textInput = label.querySelector('input[type="text"]');
+        tmplSub.push(textInput && textInput.value ? txt + textInput.value : txt);
+      }
     });
+    const tmplChecked = [...tmplMain, ...tmplSub];
     // Compliance 수집
     const bizVal    = document.querySelector('input[name="biz"]:checked')?.value || '';
     const ddVal     = document.querySelector('input[name="dd"]:checked')?.value || '';
@@ -915,6 +945,7 @@ async function submitForm() {
     const ddNo      = document.getElementById('dd-no').value || '';
     const personalVal = document.querySelector('input[name="personal"]:checked')?.value || '';
     const stdconVal = document.querySelector('input[name="stdcon"]:checked')?.value || '';
+    const stdconNo  = document.getElementById('stdcon-no').value || '';
     const smrVal    = document.querySelector('input[name="smr"]:checked')?.value || '';
     const signChecked = [];
     document.querySelectorAll('#tab-form .sign-opts input[type="checkbox"]:checked').forEach(cb => {
@@ -938,7 +969,7 @@ async function submitForm() {
       DDPerformed: ddVal,
       DDId: ddId || ddNo,
       PersonalInfo: personalVal,
-      StdContract: stdconVal,
+      StdContract: stdconVal + (stdconNo ? ' (No reason: ' + stdconNo + ')' : ''),
       SMRCompliance: smrVal,
       FinalSignOff: signChecked.join(', ') || '',
       Status: '대기',
