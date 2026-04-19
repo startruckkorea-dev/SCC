@@ -683,9 +683,9 @@ async function loadApprovalQueue() {
   const tbody = document.getElementById('appr-body');
   try {
     const data = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
-    const mine = data.value.filter(i =>
-      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
-    );
+    const mine = data.value
+      .filter(i => (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기')
+      .sort((a, b) => b.fields.RequestID - a.fields.RequestID);
     if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
     const rows = await Promise.all(mine.map(async item => {
       const f = item.fields;
@@ -795,6 +795,17 @@ async function showDetail(reqId) {
       row('Contract Period', (f.PeriodType||'') + (f.PeriodStart ? ' | ' + f.PeriodStart + ' ~ ' + (f.PeriodEnd||'No end') : '')) +
       row('Payment Term', f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-');
 
+    // Contract Template & Compliance
+    if (f.ContractTemplate || f.BizTermsReviewed || f.DDPerformed || f.PersonalInfo || f.SMRCompliance || f.FinalSignOff) {
+      html += sec('3. Contract Template & Compliance');
+      if (f.ContractTemplate) html += row('Contract Template', f.ContractTemplate);
+      if (f.BizTermsReviewed) html += row('Business/Commercial Terms Reviewed', f.BizTermsReviewed.toUpperCase());
+      if (f.DDPerformed)      html += row('Compliance Due Diligence', f.DDPerformed.toUpperCase() + (f.DDId ? ' (ID: ' + f.DDId + ')' : ''));
+      if (f.PersonalInfo)     html += row('Personal Information Disclosed', f.PersonalInfo.toUpperCase() + (f.StdContract ? ' / Standard Contract: ' + f.StdContract.toUpperCase() : ''));
+      if (f.SMRCompliance)    html += row('Signing Party (SMR Compliance)', f.SMRCompliance.toUpperCase());
+      if (f.FinalSignOff)     html += row('Final Signing Off', f.FinalSignOff);
+    }
+
     // Approvals
     let apprHtml = '';
     try {
@@ -889,6 +900,27 @@ async function submitForm() {
     const periodType = ['chk-lim','chk-auto','chk-noend'].filter(id => document.getElementById(id).checked)
       .map(id => ({ 'chk-lim':'Limited duration','chk-auto':'Auto-renewal','chk-noend':'No end date' })[id]).join(', ');
 
+    // Contract Template 체크박스 수집
+    const tmplChecked = [];
+    document.querySelectorAll('#tab-form .tmpl-main input[type="checkbox"]:checked').forEach(cb => {
+      tmplChecked.push(cb.parentElement.textContent.trim().replace(/\s+/g,' '));
+    });
+    document.querySelectorAll('#tab-form .sub-list input[type="checkbox"]:checked').forEach(cb => {
+      tmplChecked.push(cb.parentElement.textContent.trim().replace(/\s+/g,' '));
+    });
+    // Compliance 수집
+    const bizVal    = document.querySelector('input[name="biz"]:checked')?.value || '';
+    const ddVal     = document.querySelector('input[name="dd"]:checked')?.value || '';
+    const ddId      = document.getElementById('dd-id').value || '';
+    const ddNo      = document.getElementById('dd-no').value || '';
+    const personalVal = document.querySelector('input[name="personal"]:checked')?.value || '';
+    const stdconVal = document.querySelector('input[name="stdcon"]:checked')?.value || '';
+    const smrVal    = document.querySelector('input[name="smr"]:checked')?.value || '';
+    const signChecked = [];
+    document.querySelectorAll('#tab-form .sign-opts input[type="checkbox"]:checked').forEach(cb => {
+      signChecked.push(cb.parentElement.textContent.trim());
+    });
+
     const fields = {
       Title: document.getElementById('f-title').value.trim(),
       ContractCompanyType: document.getElementById('sel-type').value,
@@ -901,6 +933,14 @@ async function submitForm() {
       PeriodStart: document.getElementById('p-start').value || '',
       PeriodEnd: document.getElementById('p-end').value || '',
       PaymentDays: document.getElementById('f-paydays').value || '',
+      ContractTemplate: tmplChecked.join('; ') || '',
+      BizTermsReviewed: bizVal,
+      DDPerformed: ddVal,
+      DDId: ddId || ddNo,
+      PersonalInfo: personalVal,
+      StdContract: stdconVal,
+      SMRCompliance: smrVal,
+      FinalSignOff: signChecked.join(', ') || '',
       Status: '대기',
       RequesterEmail: user.username,
       RequestDate: now,
