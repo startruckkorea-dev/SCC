@@ -816,7 +816,21 @@ async function showDetail(reqId) {
       }
     } catch(e) {}
 
-    document.getElementById('modal-content').innerHTML = html + apprHtml;
+    // 첨부파일 표시
+    let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
+    if (f.AttachedFiles) {
+      filesHtml = f.AttachedFiles.replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/<[^>]*>/g,'')
+        .split(';').map(entry => {
+          const pi = entry.indexOf('|'); if (pi === -1) return '';
+          const name = entry.slice(0, pi).trim();
+          const url  = entry.slice(pi + 1).trim();
+          if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
+        }).filter(Boolean).join('');
+    }
+    const secFiles = '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">첨부파일</div>';
+
+    document.getElementById('modal-content').innerHTML = html + secFiles + filesHtml + apprHtml;
     document.getElementById('detail-modal').classList.add('show');
   } catch(e) { alert('상세 조회 오류: ' + e.message); }
   finally { loading(false); }
@@ -885,6 +899,38 @@ async function submitForm() {
 
     const item = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', { fields });
     const reqId = parseInt(item.id);
+
+    // ── 파일 업로드 → AttachedFiles/SCC_Requests_AttachedFiles/{reqId}/
+    const fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
+    const allFiles = [];
+    fileIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.files.length) allFiles.push(...Array.from(el.files));
+    });
+    const fileLinks = [];
+    if (allFiles.length) {
+      try {
+        const drivesData = await api('/sites/' + siteId + '/drives');
+        const drive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+        const t = await token();
+        for (const file of allFiles) {
+          try {
+            const buf = await file.arrayBuffer();
+            const res = await fetch(
+              GRAPH + '/drives/' + drive.id + '/root:/SCC_Requests_AttachedFiles/' + reqId + '/' + encodeURIComponent(file.name) + ':/content',
+              { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' }, body: buf }
+            );
+            if (res.ok) { const u = await res.json(); fileLinks.push(file.name + '|' + (u.webUrl || '')); }
+            else { console.error('Upload failed:', res.status, await res.text()); }
+          } catch(fe) { console.error('File upload error:', fe); }
+        }
+        if (fileLinks.length) {
+          await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', {
+            fields: { AttachedFiles: fileLinks.join(';') }
+          });
+        }
+      } catch(fe) { console.error('Drive error:', fe); }
+    }
 
     // 결재자 등록 (1차, 2차 선택 + 3차, 4차 고정)
     const approvers = [
