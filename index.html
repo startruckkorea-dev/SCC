@@ -837,7 +837,6 @@ async function showDetail(reqId) {
         return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
       }).filter(Boolean).join('');
     }
-    }
     const secFiles = '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">첨부파일</div>';
 
     document.getElementById('modal-content').innerHTML = html + secFiles + filesHtml + apprHtml;
