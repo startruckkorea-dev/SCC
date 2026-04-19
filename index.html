@@ -17,22 +17,33 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 #btn-login { background: #0078d4; color: #fff; border: none; border-radius: 4px; padding: 10px 28px; font-size: 15px; cursor: pointer; margin-top: 8px; }
 #btn-login:hover:not(:disabled) { background: #006cbe; }
 #btn-login:disabled { background: #c8c6c4; cursor: not-allowed; }
-.notice-error { font-size: 12px; padding: 8px 12px; border-radius: 4px; background: #fde7e9; color: #a4262c; max-width: 400px; text-align: center; display: none; }
+.login-error { font-size: 12px; padding: 8px 12px; border-radius: 4px; background: #fde7e9; color: #a4262c; max-width: 420px; text-align: center; display: none; }
 
 /* ── App ── */
-#app { display: none; max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+#app { display: none; max-width: 960px; margin: 0 auto; padding: 24px 16px; }
 
+/* ── Header ── */
 .header { background: #fff; border-radius: 6px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #edebe9; }
-.header .title { font-size: 18px; font-weight: 600; color: #323130; }
-.header .user-info { font-size: 13px; color: #605e5c; display: flex; align-items: center; gap: 12px; }
+.header-left .title { font-size: 18px; font-weight: 600; color: #323130; }
+.header-left .subtitle { font-size: 11px; color: #605e5c; margin-top: 3px; }
+.user-info { font-size: 13px; color: #605e5c; display: flex; align-items: center; gap: 12px; }
 #btn-logout { background: none; border: 1px solid #d2d0ce; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: #323130; }
 
+/* ── Tabs ── */
+.tabs { display: flex; gap: 2px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 18px; border: none; background: #fff; border-radius: 4px 4px 0 0; font-size: 14px; cursor: pointer; color: #605e5c; border-bottom: 3px solid transparent; }
+.tab.active { color: #0078d4; border-bottom: 3px solid #0078d4; font-weight: 500; }
+.tab-badge { background: #a4262c; color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 11px; margin-left: 4px; display: none; }
+
+/* ── Card ── */
 .card { background: #fff; border-radius: 6px; border: 1px solid #edebe9; padding: 24px; margin-bottom: 16px; }
 .card-title { font-size: 14px; font-weight: 600; color: #323130; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #edebe9; }
 
+/* ── Section title ── */
 .section-title { font-size: 13px; font-weight: 600; color: #0078d4; margin: 20px 0 14px; padding: 6px 12px; background: #f0f6ff; border-radius: 4px; border-left: 3px solid #0078d4; }
 .section-title:first-child { margin-top: 0; }
 
+/* ── Form ── */
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .form-row.full { grid-template-columns: 1fr; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
@@ -50,14 +61,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .form-group input[readonly], .form-group input:disabled, .form-group select:disabled { background: #f3f2f1; color: #a19f9d; cursor: not-allowed; }
 .form-group textarea { resize: vertical; min-height: 80px; }
 
-.inline-row { display: flex; gap: 8px; align-items: center; }
+.inline-row { display: flex; gap: 8px; }
 .inline-row input { flex: 1; border: 1px solid #d2d0ce; border-radius: 4px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
 .inline-row input:focus { outline: none; border-color: #0078d4; }
 .inline-row select { width: 110px; flex-shrink: 0; border: 1px solid #d2d0ce; border-radius: 4px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
 
 .period-checks { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
 .period-checks label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #323130; cursor: pointer; }
-.period-checks input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; cursor: pointer; }
+.period-checks input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; }
 .period-dates { display: flex; align-items: center; gap: 10px; }
 .period-dates span { font-size: 13px; color: #605e5c; }
 .period-dates input[type="date"] { border: 1px solid #d2d0ce; border-radius: 4px; padding: 7px 10px; font-size: 13px; font-family: inherit; flex: 1; }
@@ -66,22 +77,22 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 .pay-inline { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #323130; }
 .pay-inline input { width: 80px; border: 1px solid #d2d0ce; border-radius: 4px; padding: 7px 10px; font-size: 13px; font-family: inherit; text-align: center; }
-.pay-inline input:focus { outline: none; border-color: #0078d4; }
 
-.file-group { display: flex; flex-direction: column; gap: 0; }
+/* Files */
+.file-group { display: flex; flex-direction: column; }
 .file-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f3f2f1; }
 .file-row:last-child { border-bottom: none; }
-.file-row input[type="file"] { flex: 1; font-size: 12px; color: #323130; border: 1px solid #d2d0ce; border-radius: 4px; padding: 5px 8px; background: #fff; }
-.btn-file-reset { background: #fff; border: 1px solid #d2d0ce; border-radius: 4px; padding: 4px 12px; font-size: 12px; color: #a4262c; cursor: pointer; white-space: nowrap; }
+.file-row input[type="file"] { flex: 1; font-size: 12px; border: 1px solid #d2d0ce; border-radius: 4px; padding: 5px 8px; background: #fff; }
+.btn-file-reset { background: #fff; border: 1px solid #d2d0ce; border-radius: 4px; padding: 4px 12px; font-size: 12px; color: #a4262c; cursor: pointer; }
 .btn-file-reset:hover { background: #fde7e9; border-color: #a4262c; }
 
 /* Template */
 .tmpl-block { margin-bottom: 10px; }
 .tmpl-main { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #323130; cursor: pointer; font-weight: 500; margin-bottom: 5px; }
-.tmpl-main input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; cursor: pointer; }
+.tmpl-main input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; }
 .sub-list { margin-left: 22px; display: flex; flex-direction: column; gap: 4px; }
 .sub-list label { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: #323130; cursor: pointer; line-height: 1.4; }
-.sub-list label input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
+.sub-list label input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; margin-top: 2px; flex-shrink: 0; }
 .sub-list .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
 .tmpl-text { border: none; border-bottom: 1px solid #d2d0ce; font-size: 13px; padding: 1px 6px; color: #323130; font-family: inherit; background: transparent; min-width: 160px; flex: 1; }
 .tmpl-text:focus { outline: none; border-bottom-color: #0078d4; }
@@ -94,7 +105,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .comp-label.sub { padding-left: 20px; color: #605e5c; }
 .comp-opts { display: flex; align-items: center; gap: 14px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 .comp-opts label { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #323130; cursor: pointer; white-space: nowrap; }
-.comp-opts input[type="radio"], .comp-opts input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; cursor: pointer; }
+.comp-opts input[type="radio"], .comp-opts input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; }
 .extra-inp { border: 1px solid #d2d0ce; border-radius: 4px; padding: 3px 8px; font-size: 12px; font-family: inherit; width: 90px; color: #323130; }
 .extra-inp:disabled { background: #f3f2f1; color: #a19f9d; }
 .extra-inp:focus { outline: none; border-color: #0078d4; }
@@ -102,32 +113,59 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .sub-row.show { display: flex; }
 .sign-opts { display: flex; gap: 16px; flex-wrap: wrap; }
 .sign-opts label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #323130; cursor: pointer; }
-.sign-opts input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; cursor: pointer; }
+.sign-opts input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; }
 
-/* ── Approver blocks ── */
+/* Approver blocks */
 .appr-block { background: #f9f9f9; border: 1px solid #edebe9; border-radius: 6px; padding: 14px; margin-bottom: 10px; }
 .appr-block:last-child { margin-bottom: 0; }
 .appr-title { font-size: 12px; font-weight: 600; color: #323130; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 .appr-title::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0078d4; }
 .appr-title .hint { font-size: 11px; color: #605e5c; font-weight: 400; }
+.appr-title .req-mark { color: #a4262c; font-size: 11px; }
 .appr-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-.appr-grid select { border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; font-size: 13px; font-family: inherit; color: #323130; background: #fff; }
+.appr-grid select { border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; font-size: 13px; font-family: inherit; background: #fff; }
 .appr-grid select:focus { outline: none; border-color: #0078d4; }
 .appr-grid select:disabled { background: #f3f2f1; color: #a19f9d; }
 .appr-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .appr-info input { border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; font-size: 13px; font-family: inherit; background: #f3f2f1; color: #605e5c; }
 
-/* Fixed approver */
-.appr-fixed { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.appr-fixed input { border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; font-size: 13px; font-family: inherit; background: #f3f2f1; color: #605e5c; }
+/* List table */
+.list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list-table th { background: #f3f2f1; padding: 10px 12px; text-align: left; font-weight: 600; color: #323130; border-bottom: 2px solid #edebe9; font-size: 12px; }
+.list-table td { padding: 10px 12px; border-bottom: 1px solid #edebe9; color: #323130; font-size: 13px; }
+.list-table tr:hover td { background: #f0f6ff; cursor: pointer; }
+.list-table tr:last-child td { border-bottom: none; }
 
+.badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.badge-대기 { background: #fff4ce; color: #7d5700; }
+.badge-승인 { background: #dff6dd; color: #107c10; }
+.badge-반려 { background: #fde7e9; color: #a4262c; }
+.badge-승인완료 { background: #dff6dd; color: #107c10; }
+.badge-처리중 { background: #e8f4ff; color: #0078d4; }
+
+.filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.filter-bar select, .filter-bar input { border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; font-size: 13px; }
+.filter-bar input { width: 200px; }
+
+/* Modal */
+#detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
+#detail-modal.show { display: flex; }
+.modal-box { background: #fff; border-radius: 8px; padding: 28px 32px; max-width: 680px; width: 95%; max-height: 88vh; overflow-y: auto; position: relative; }
+.modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #605e5c; }
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #323130; }
+.modal-row { display: flex; padding: 7px 0; border-bottom: 0.5px solid #edebe9; font-size: 13px; }
+.modal-label { width: 140px; min-width: 140px; color: #605e5c; font-size: 12px; }
+.modal-value { flex: 1; color: #323130; word-break: break-all; }
+
+/* Btn row */
 .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #edebe9; }
 .btn-primary { background: #0078d4; color: #fff; border: none; border-radius: 4px; padding: 9px 24px; font-size: 14px; font-weight: 500; cursor: pointer; }
 .btn-primary:hover { background: #006cbe; }
+.btn-primary:disabled { background: #c8c6c4; cursor: not-allowed; }
 .btn-secondary { background: #fff; color: #323130; border: 1px solid #d2d0ce; border-radius: 4px; padding: 9px 24px; font-size: 14px; cursor: pointer; }
 .btn-secondary:hover { background: #f3f2f1; }
 
-/* Loading spinner */
+/* Loading */
 #loading { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); align-items: center; justify-content: center; z-index: 999; }
 #loading.show { display: flex; }
 .loading-box { background: #fff; border-radius: 6px; padding: 28px 40px; font-size: 15px; color: #323130; display: flex; flex-direction: column; align-items: center; gap: 16px; }
@@ -137,26 +175,27 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 @media (max-width: 600px) {
   .form-row { grid-template-columns: 1fr; }
   .appr-grid { grid-template-columns: 1fr; }
-  .appr-info, .appr-fixed { grid-template-columns: 1fr; }
+  .appr-info { grid-template-columns: 1fr; }
   .sub-list .two-col { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 
-<!-- ── Login Screen ── -->
+<!-- ── Login ── -->
 <div id="login-screen">
   <div class="logo">STAR TRUCK KOREA</div>
   <div class="subtitle">STK Contract Checklist</div>
   <button id="btn-login" onclick="signIn()" disabled>로딩 중...</button>
-  <div id="login-error" class="notice-error"></div>
+  <div id="login-error" class="login-error"></div>
 </div>
 
 <!-- ── App ── -->
 <div id="app">
   <div class="header">
-    <div>
+    <div class="header-left">
       <div class="title">STK Contract Checklist</div>
+      <div class="subtitle">관련 문의 Email: stk_compliance@hyosung.com</div>
     </div>
     <div class="user-info">
       <span id="user-name"></span>
@@ -164,290 +203,317 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">계약 체크리스트 (Contract Checklist)</div>
+  <div class="tabs">
+    <button class="tab active" id="tab-form-btn" onclick="switchTab('form')">신청서 작성</button>
+    <button class="tab" id="tab-list-btn"     onclick="switchTab('list')">내 신청 목록</button>
+    <button class="tab" id="tab-approval-btn" onclick="switchTab('approval')">결재함 <span id="appr-badge" class="tab-badge"></span></button>
+    <button class="tab" id="tab-admin-btn"    onclick="switchTab('admin')" style="display:none">관리자</button>
+  </div>
 
-    <!-- ── 1. Basic Information ── -->
-    <div class="section-title">1. 기본 정보 (Basic Information)</div>
+  <!-- ── 신청서 작성 ── -->
+  <div id="tab-form">
+    <div class="card">
+      <div class="card-title">계약 체크리스트 (Contract Checklist)</div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label>Company <span class="req">*</span></label>
-        <select id="company"><option value="STK">STK</option></select>
-      </div>
-      <div class="form-group">
-        <label>Type <span class="req">*</span></label>
-        <select id="sel-type">
-          <option value="">-- Choice Type --</option>
-          <option value="Sales">Sales</option>
-          <option value="Non-Sales">Non-Sales</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row full">
-      <div class="form-group">
-        <label>Title of Contract <span class="req">*</span></label>
-        <input type="text" id="f-title" placeholder="">
-      </div>
-    </div>
-
-    <div class="form-row full">
-      <div class="form-group">
-        <label>Contract Partner <span class="req">*</span></label>
-        <input type="text" id="f-partner" placeholder="">
-      </div>
-    </div>
-
-    <div class="form-row full">
-      <div class="form-group">
-        <label>Objective of Contract <span class="req">*</span></label>
-        <input type="text" id="f-objective" placeholder="">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label>Contract Value <span class="req">*</span></label>
-        <div class="inline-row">
-          <input type="number" id="f-value" placeholder="0" min="0">
-          <select id="f-currency">
-            <option value="">-- Currency --</option>
-            <option>USD</option><option>EUR</option>
-            <option>KRW</option><option>SGD</option><option>etc</option>
+      <div class="section-title">1. 기본 정보 (Basic Information)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company <span class="req">*</span></label>
+          <select id="company"><option value="STK">STK</option></select>
+        </div>
+        <div class="form-group">
+          <label>Type <span class="req">*</span></label>
+          <select id="sel-type">
+            <option value="">-- Choice Type --</option>
+            <option>Sales</option><option>Non-Sales</option>
           </select>
         </div>
       </div>
-      <div class="form-group">
-        <label>Contract Type <span class="req">*</span></label>
-        <select id="f-ctype">
-          <option value="">-- Choice Contract Type --</option>
-          <option>New</option>
-          <option>Contract Term Extension</option>
-          <option>Amendment or Supplementary Agreement</option>
-          <option>Copy of Original Agreement Attached</option>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Title of Contract <span class="req">*</span></label>
+          <input type="text" id="f-title">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Contract Partner <span class="req">*</span></label>
+          <input type="text" id="f-partner">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Objective of Contract <span class="req">*</span></label>
+          <input type="text" id="f-objective">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contract Value <span class="req">*</span></label>
+          <div class="inline-row">
+            <input type="number" id="f-value" placeholder="0" min="0">
+            <select id="f-currency">
+              <option value="">-- Currency --</option>
+              <option>USD</option><option>EUR</option><option>KRW</option><option>SGD</option><option>etc</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Contract Type <span class="req">*</span></label>
+          <select id="f-ctype">
+            <option value="">-- Choice Contract Type --</option>
+            <option>New</option>
+            <option>Contract Term Extension</option>
+            <option>Amendment or Supplementary Agreement</option>
+            <option>Copy of Original Agreement Attached</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Contract Period <span class="req">*</span></label>
+        <div class="period-checks">
+          <label><input type="checkbox" id="chk-lim"   onchange="onPeriod()"> Limited duration</label>
+          <label><input type="checkbox" id="chk-auto"  onchange="onPeriod()"> Auto-renewal</label>
+          <label><input type="checkbox" id="chk-noend" onchange="onPeriod()"> No end date</label>
+        </div>
+        <div class="period-dates">
+          <span>start:</span><input type="date" id="p-start">
+          <span>end:</span><input type="date" id="p-end">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Payment Term</label>
+        <div class="pay-inline">Within <input type="number" id="f-paydays" min="0"> days from invoice date</div>
+      </div>
+
+      <div class="section-title">2. 계약서류 (Contract Documents)</div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Contract document <span class="req">*</span></label>
+        <div class="file-group">
+          <div class="file-row"><input type="file" id="f-doc"><button class="btn-file-reset" onclick="rf('f-doc')">Reset</button></div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Attachment</label>
+        <div class="file-group">
+          <div class="file-row"><input type="file" id="att1"><button class="btn-file-reset" onclick="rf('att1')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att2"><button class="btn-file-reset" onclick="rf('att2')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att3"><button class="btn-file-reset" onclick="rf('att3')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att4"><button class="btn-file-reset" onclick="rf('att4')">Reset</button></div>
+        </div>
+      </div>
+
+      <div class="section-title">3. Contract Template</div>
+      <div class="tmpl-block">
+        <label class="tmpl-main"><input type="checkbox"> Standard template</label>
+        <div class="sub-list">
+          <div class="two-col">
+            <label><input type="checkbox"> - Dealership / Service Center Agreement</label>
+            <label><input type="checkbox"> - Service Level Agreement with Other Mercedes-Benz Entity</label>
+            <label><input type="checkbox"> - (STK) Bodybuilder Framework Agreement</label>
+          </div>
+          <label style="align-items:center;flex-wrap:wrap;gap:4px;">
+            <input type="checkbox">- Other standard template ( title:&nbsp;<input type="text" class="tmpl-text">&nbsp;)
+          </label>
+        </div>
+      </div>
+      <div class="tmpl-block">
+        <label class="tmpl-main"><input type="checkbox"> Non-Standard template</label>
+        <div class="sub-list">
+          <div class="two-col">
+            <label><input type="checkbox"> - Legal's review was complete</label>
+            <label><input type="checkbox"> - Soft copy was emailed to Legal</label>
+            <label><input type="checkbox"> - Contract was drafted by Legal</label>
+          </div>
+        </div>
+      </div>
+      <div class="tmpl-block">
+        <label class="tmpl-main"><input type="checkbox"> Government template</label>
+      </div>
+
+      <div class="section-title">4. Compliance / Final Check</div>
+      <div class="comp-row">
+        <div class="comp-label">Business / commercial terms was reviewed</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="biz" value="yes"> YES</label>
+          <label><input type="radio" name="biz" value="no"> NO</label>
+        </div>
+      </div>
+      <div class="comp-header">Compliance-related Assessment</div>
+      <div class="comp-row">
+        <div class="comp-label">Is Compliance Due Diligence performed?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="dd" value="yes" onchange="onDD(this)"> YES &nbsp;( DD ID: <input type="text" class="extra-inp" id="dd-id" disabled> )</label>
+          <label><input type="radio" name="dd" value="no"  onchange="onDD(this)"> NO &nbsp;( <input type="text" class="extra-inp" id="dd-no" disabled> )</label>
+        </div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-label">Is personal Information(개인정보) of customers or employees provided/disclosed to Contract Party or 3rd Party?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="personal" value="yes" onchange="onPersonal(this)"> YES</label>
+          <label><input type="radio" name="personal" value="no"  onchange="onPersonal(this)"> NO</label>
+        </div>
+      </div>
+      <div class="sub-row" id="std-row">
+        <div class="comp-label sub">- is this Standard contract?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="stdcon" value="yes"> YES</label>
+          <label><input type="radio" name="stdcon" value="no"> NO &nbsp;( <input type="text" class="extra-inp" id="stdcon-no"> )</label>
+        </div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-label">Signing Party Designation is in compliance with SMR?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="smr" value="yes"> YES</label>
+          <label><input type="radio" name="smr" value="no"> NO</label>
+        </div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-label">Final signing off?</div>
+        <div class="comp-opts sign-opts">
+          <label><input type="checkbox"> authorized person's signatures</label>
+          <label><input type="checkbox"> signatures and corporate chop</label>
+          <label><input type="checkbox"> chop only</label>
+        </div>
+      </div>
+
+      <div class="section-title">5. 결재자 지정 (Approvers)</div>
+
+      <!-- 1차: Line Manager (선택) -->
+      <div class="appr-block">
+        <div class="appr-title">1차 결재자 <span class="req-mark">*</span> <span class="hint">— Line Manager (팀장)</span></div>
+        <div class="appr-grid">
+          <select id="a1-dept"   onchange="onDeptChange(1)"><option value="">부서</option></select>
+          <select id="a1-team"   onchange="onTeamChange(1)" disabled><option value="">팀</option></select>
+          <select id="a1-person" onchange="onPersonChange(1)" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="appr-info">
+          <input type="text"  id="a1-name"  readonly placeholder="이름">
+          <input type="email" id="a1-email" readonly placeholder="이메일">
+        </div>
+      </div>
+
+      <!-- 2차: 부서장 (선택) -->
+      <div class="appr-block">
+        <div class="appr-title">2차 결재자 <span class="hint">— Department Head (부서장)</span></div>
+        <div class="appr-grid">
+          <select id="a2-dept"   onchange="onDeptChange(2)"><option value="">부서</option></select>
+          <select id="a2-team"   onchange="onTeamChange(2)" disabled><option value="">팀</option></select>
+          <select id="a2-person" onchange="onPersonChange(2)" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="appr-info">
+          <input type="text"  id="a2-name"  readonly placeholder="이름">
+          <input type="email" id="a2-email" readonly placeholder="이메일">
+        </div>
+      </div>
+
+      <!-- 3차: Legal & Compliance — 고정 -->
+      <div class="appr-block">
+        <div class="appr-title">3차 결재자 <span class="hint">— Legal &amp; Compliance (자동 지정)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Eunjung Seo" readonly>
+          <input type="email" value="eunjung.seo@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- 4차: Accounting 팀장 — 고정 -->
+      <div class="appr-block">
+        <div class="appr-title">4차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Gina Shin" readonly>
+          <input type="email" value="gina.shin@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="resetForm()">초기화</button>
+        <button class="btn-primary"   onclick="submitForm()">제출</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 내 신청 목록 ── -->
+  <div id="tab-list" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th>
+        </tr></thead>
+        <tbody id="list-body">
+          <tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 결재함 ── -->
+  <div id="tab-approval" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>상태</th><th>신청일</th><th>처리</th>
+        </tr></thead>
+        <tbody id="appr-body">
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 관리자 ── -->
+  <div id="tab-admin" style="display:none">
+    <div class="card">
+      <div class="filter-bar">
+        <select id="admin-filter-status" onchange="loadAdminList()">
+          <option value="">전체 상태</option>
+          <option>대기</option><option>처리중</option><option>승인완료</option><option>반려</option>
         </select>
+        <input type="text" id="admin-filter-search" oninput="loadAdminList()" placeholder="신청자 / 제목 검색...">
+        <span id="admin-count" style="font-size:13px;color:#605e5c;margin-left:auto"></span>
       </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom:14px">
-      <label>Contract Period <span class="req">*</span></label>
-      <div class="period-checks">
-        <label><input type="checkbox" id="chk-lim"   onchange="onPeriod()"> Limited duration</label>
-        <label><input type="checkbox" id="chk-auto"  onchange="onPeriod()"> Auto-renewal</label>
-        <label><input type="checkbox" id="chk-noend" onchange="onPeriod()"> No end date</label>
-      </div>
-      <div class="period-dates">
-        <span>start:</span><input type="date" id="p-start">
-        <span>end:</span><input type="date" id="p-end">
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom:14px">
-      <label>Payment Term</label>
-      <div class="pay-inline">
-        Within <input type="number" id="f-paydays" min="0" placeholder=""> days from invoice date
-      </div>
-    </div>
-
-    <!-- ── 2. Contract Documents ── -->
-    <div class="section-title">2. 계약서류 (Contract Documents)</div>
-
-    <div class="form-group" style="margin-bottom:14px">
-      <label>Contract document <span class="req">*</span></label>
-      <div class="file-group">
-        <div class="file-row">
-          <input type="file" id="f-doc">
-          <button class="btn-file-reset" onclick="rf('f-doc')">Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom:14px">
-      <label>Attachment</label>
-      <div class="file-group">
-        <div class="file-row"><input type="file" id="att1"><button class="btn-file-reset" onclick="rf('att1')">Reset</button></div>
-        <div class="file-row"><input type="file" id="att2"><button class="btn-file-reset" onclick="rf('att2')">Reset</button></div>
-        <div class="file-row"><input type="file" id="att3"><button class="btn-file-reset" onclick="rf('att3')">Reset</button></div>
-        <div class="file-row"><input type="file" id="att4"><button class="btn-file-reset" onclick="rf('att4')">Reset</button></div>
-      </div>
-    </div>
-
-    <!-- ── 3. Contract Template ── -->
-    <div class="section-title">3. Contract Template</div>
-
-    <div class="tmpl-block">
-      <label class="tmpl-main"><input type="checkbox"> Standard template</label>
-      <div class="sub-list">
-        <div class="two-col">
-          <label><input type="checkbox"> - Dealership / Service Center Agreement</label>
-          <label><input type="checkbox"> - Service Level Agreement with Other Mercedes-Benz Entity</label>
-          <label><input type="checkbox"> - (STK) Bodybuilder Framework Agreement</label>
-        </div>
-        <label style="align-items:center;flex-wrap:wrap;gap:4px;">
-          <input type="checkbox">
-          - Other standard template ( title:&nbsp;<input type="text" class="tmpl-text" placeholder="">&nbsp;)
-        </label>
-      </div>
-    </div>
-
-    <div class="tmpl-block">
-      <label class="tmpl-main"><input type="checkbox"> Non-Standard template</label>
-      <div class="sub-list">
-        <div class="two-col">
-          <label><input type="checkbox"> - Legal's review was complete</label>
-          <label><input type="checkbox"> - Soft copy was emailed to Legal</label>
-          <label><input type="checkbox"> - Contract was drafted by Legal</label>
-        </div>
-      </div>
-    </div>
-
-    <div class="tmpl-block">
-      <label class="tmpl-main"><input type="checkbox"> Government template</label>
-    </div>
-
-    <!-- ── 4. Compliance / Final Check ── -->
-    <div class="section-title">4. Compliance / Final Check</div>
-
-    <div class="comp-row">
-      <div class="comp-label">Business / commercial terms was reviewed</div>
-      <div class="comp-opts">
-        <label><input type="radio" name="biz" value="yes"> YES</label>
-        <label><input type="radio" name="biz" value="no"> NO</label>
-      </div>
-    </div>
-
-    <div class="comp-header">Compliance-related Assessment</div>
-
-    <div class="comp-row">
-      <div class="comp-label">Is Compliance Due Diligence performed?</div>
-      <div class="comp-opts">
-        <label>
-          <input type="radio" name="dd" value="yes" onchange="onDD(this)">
-          YES &nbsp;( DD ID: <input type="text" class="extra-inp" id="dd-id" disabled placeholder=""> )
-        </label>
-        <label>
-          <input type="radio" name="dd" value="no" onchange="onDD(this)">
-          NO &nbsp;( <input type="text" class="extra-inp" id="dd-no" disabled placeholder=""> )
-        </label>
-      </div>
-    </div>
-
-    <div class="comp-row">
-      <div class="comp-label">Is personal Information(개인정보) of customers or employees provided/disclosed to Contract Party or 3rd Party?</div>
-      <div class="comp-opts">
-        <label><input type="radio" name="personal" value="yes" onchange="onPersonal(this)"> YES</label>
-        <label><input type="radio" name="personal" value="no"  onchange="onPersonal(this)"> NO</label>
-      </div>
-    </div>
-
-    <div class="sub-row" id="std-row">
-      <div class="comp-label sub">- is this Standard contract?</div>
-      <div class="comp-opts">
-        <label><input type="radio" name="stdcon" value="yes"> YES</label>
-        <label>
-          <input type="radio" name="stdcon" value="no">
-          NO &nbsp;( <input type="text" class="extra-inp" id="stdcon-no" placeholder=""> )
-        </label>
-      </div>
-    </div>
-
-    <div class="comp-row">
-      <div class="comp-label">Signing Party Designation is in compliance with SMR?</div>
-      <div class="comp-opts">
-        <label><input type="radio" name="smr" value="yes"> YES</label>
-        <label><input type="radio" name="smr" value="no"> NO</label>
-      </div>
-    </div>
-
-    <div class="comp-row">
-      <div class="comp-label">Final signing off?</div>
-      <div class="comp-opts sign-opts">
-        <label><input type="checkbox"> authorized person's signatures</label>
-        <label><input type="checkbox"> signatures and corporate chop</label>
-        <label><input type="checkbox"> chop only</label>
-      </div>
-    </div>
-
-    <!-- ── 5. 결재자 지정 ── -->
-    <div class="section-title">5. 결재자 지정 (Approvers)</div>
-
-    <!-- 1차: Line Manager -->
-    <div class="appr-block">
-      <div class="appr-title">1차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span class="hint">— Line Manager (팀장)</span></div>
-      <div class="appr-grid">
-        <select id="a1-dept" onchange="onDeptChange(1)"><option value="">부서</option></select>
-        <select id="a1-team" onchange="onTeamChange(1)" disabled><option value="">팀</option></select>
-        <select id="a1-person" onchange="onPersonChange(1)" disabled><option value="">직원 선택</option></select>
-      </div>
-      <div class="appr-info">
-        <input type="text"  id="a1-name"  readonly placeholder="이름">
-        <input type="email" id="a1-email" readonly placeholder="이메일">
-      </div>
-    </div>
-
-    <!-- 2차: 부서장 -->
-    <div class="appr-block">
-      <div class="appr-title">2차 결재자 <span class="hint">— Department Head (부서장)</span></div>
-      <div class="appr-grid">
-        <select id="a2-dept" onchange="onDeptChange(2)"><option value="">부서</option></select>
-        <select id="a2-team" onchange="onTeamChange(2)" disabled><option value="">팀</option></select>
-        <select id="a2-person" onchange="onPersonChange(2)" disabled><option value="">직원 선택</option></select>
-      </div>
-      <div class="appr-info">
-        <input type="text"  id="a2-name"  readonly placeholder="이름">
-        <input type="email" id="a2-email" readonly placeholder="이메일">
-      </div>
-    </div>
-
-    <!-- 3차: Legal & Compliance -->
-    <div class="appr-block">
-      <div class="appr-title">3차 결재자 <span class="hint">— Legal &amp; Compliance</span></div>
-      <div class="appr-grid">
-        <select id="a3-dept" onchange="onDeptChange(3)"><option value="">부서</option></select>
-        <select id="a3-team" onchange="onTeamChange(3)" disabled><option value="">팀</option></select>
-        <select id="a3-person" onchange="onPersonChange(3)" disabled><option value="">직원 선택</option></select>
-      </div>
-      <div class="appr-info">
-        <input type="text"  id="a3-name"  readonly placeholder="이름">
-        <input type="email" id="a3-email" readonly placeholder="이메일">
-      </div>
-    </div>
-
-    <!-- 4차: Accounting 팀장 -->
-    <div class="appr-block">
-      <div class="appr-title">4차 결재자 <span class="hint">— Accounting 팀장</span></div>
-      <div class="appr-grid">
-        <select id="a4-dept" onchange="onDeptChange(4)"><option value="">부서</option></select>
-        <select id="a4-team" onchange="onTeamChange(4)" disabled><option value="">팀</option></select>
-        <select id="a4-person" onchange="onPersonChange(4)" disabled><option value="">직원 선택</option></select>
-      </div>
-      <div class="appr-info">
-        <input type="text"  id="a4-name"  readonly placeholder="이름">
-        <input type="email" id="a4-email" readonly placeholder="이메일">
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="resetAll()">Reset</button>
-      <button class="btn-primary"   onclick="submitForm()">Submit</button>
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th>
+        </tr></thead>
+        <tbody id="admin-body">
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<!-- Loading -->
+<!-- ── Detail Modal ── -->
+<div id="detail-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title">신청 상세 내용</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
 <div id="loading"><div class="loading-box"><div class="spinner"></div><span>처리 중입니다...</span></div></div>
 
 <script>
 // ── Constants ──
-const CLIENT_ID = '432976c2-b43a-492e-8213-ece505fa1f51';
-const TENANT_ID = '19cab1f5-21f4-44df-8ac6-96d6ca595203';
-const SITE_PATH = 'startruckkorea.sharepoint.com:/sites/STK-DB:';
-const GRAPH     = 'https://graph.microsoft.com/v1.0';
-const SCOPES    = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
+const CLIENT_ID   = '432976c2-b43a-492e-8213-ece505fa1f51';
+const TENANT_ID   = '19cab1f5-21f4-44df-8ac6-96d6ca595203';
+const SITE_PATH   = 'startruckkorea.sharepoint.com:/sites/STK-DB:';
+const GRAPH       = 'https://graph.microsoft.com/v1.0';
+const SCOPES      = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
+const LIST_REQ    = 'STK_Contracts';      // SharePoint 리스트 이름 (신청)
+const LIST_APR    = 'STK_ContractApprovals'; // SharePoint 리스트 이름 (결재)
+const ADMIN_EMAILS = [
+  'eunjung.seo@hyosung.com',
+  'admin@startruckkorea.onmicrosoft.com'
+];
+// 고정 결재자
+const A3 = { name: 'Eunjung Seo', email: 'eunjung.seo@hyosung.com', role: '3차결재자(Legal&Compliance)', order: 3 };
+const A4 = { name: 'Gina Shin',   email: 'gina.shin@hyosung.com',   role: '4차결재자(Accounting팀장)',   order: 4 };
 
 let msalApp = null, user = null, siteId = null;
 let employeeData = [];
+let allContractsCache = [];
 
 // ── MSAL ──
 async function signIn() {
@@ -456,7 +522,7 @@ async function signIn() {
     const r = await msal.loginPopup({ scopes: SCOPES });
     msal.setActiveAccount(r.account);
     await boot(r.account);
-  } catch(e) { showError(e.message); }
+  } catch(e) { showLoginError(e.message); }
 }
 function signOut() { msal.logoutRedirect(); }
 
@@ -492,6 +558,11 @@ async function boot(account) {
     const site = await api('/sites/' + SITE_PATH);
     siteId = site.id;
     await loadEmployees();
+    await checkApprovalBadge();
+    // 관리자 탭
+    if (ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.username.toLowerCase())) {
+      document.getElementById('tab-admin-btn').style.display = 'block';
+    }
   } catch(e) { alert('SharePoint 연결 오류: ' + e.message); }
 }
 
@@ -513,11 +584,9 @@ async function loadEmployees() {
       name: r['EngName'] || '',
       email: r['EMail'] || r['email'] || ''
     })).filter(r => r.email && r.name);
-    // 4개 결재자 드롭다운 초기화
-    [1, 2, 3, 4].forEach(i => populateDepts(i));
+    [1, 2].forEach(i => populateDepts(i));
   } catch(e) { console.warn('직원 데이터 로드 실패:', e); }
 }
-
 function populateDepts(idx) {
   const depts = [...new Set(employeeData.map(e => e.dept))].sort();
   const sel = document.getElementById('a' + idx + '-dept');
@@ -525,117 +594,351 @@ function populateDepts(idx) {
 }
 function onDeptChange(idx) {
   const dept = document.getElementById('a' + idx + '-dept').value;
-  const teamSel   = document.getElementById('a' + idx + '-team');
-  const personSel = document.getElementById('a' + idx + '-person');
-  document.getElementById('a' + idx + '-name').value  = '';
+  const tSel = document.getElementById('a' + idx + '-team');
+  const pSel = document.getElementById('a' + idx + '-person');
+  document.getElementById('a' + idx + '-name').value = '';
   document.getElementById('a' + idx + '-email').value = '';
   const teams = [...new Set(employeeData.filter(e => e.dept === dept).map(e => e.team))].sort();
-  teamSel.innerHTML = '<option value="">팀</option>' + teams.map(t => '<option value="' + t + '">' + t + '</option>').join('');
-  teamSel.disabled   = !dept;
-  personSel.innerHTML = '<option value="">직원 선택</option>';
-  personSel.disabled  = true;
+  tSel.innerHTML = '<option value="">팀</option>' + teams.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+  tSel.disabled = !dept;
+  pSel.innerHTML = '<option value="">직원 선택</option>'; pSel.disabled = true;
 }
 function onTeamChange(idx) {
   const dept = document.getElementById('a' + idx + '-dept').value;
   const team = document.getElementById('a' + idx + '-team').value;
-  const personSel = document.getElementById('a' + idx + '-person');
-  document.getElementById('a' + idx + '-name').value  = '';
+  const pSel = document.getElementById('a' + idx + '-person');
+  document.getElementById('a' + idx + '-name').value = '';
   document.getElementById('a' + idx + '-email').value = '';
   const persons = employeeData.filter(e => e.dept === dept && e.team === team);
-  personSel.innerHTML = '<option value="">직원 선택</option>' + persons.map(p => '<option value="' + p.email + '">' + p.name + '</option>').join('');
-  personSel.disabled = !team;
+  pSel.innerHTML = '<option value="">직원 선택</option>' + persons.map(p => '<option value="' + p.email + '">' + p.name + '</option>').join('');
+  pSel.disabled = !team;
 }
 function onPersonChange(idx) {
-  const email  = document.getElementById('a' + idx + '-person').value;
-  const person = employeeData.find(e => e.email === email);
-  document.getElementById('a' + idx + '-name').value  = person ? person.name  : '';
-  document.getElementById('a' + idx + '-email').value = person ? person.email : '';
+  const email = document.getElementById('a' + idx + '-person').value;
+  const p = employeeData.find(e => e.email === email);
+  document.getElementById('a' + idx + '-name').value  = p ? p.name  : '';
+  document.getElementById('a' + idx + '-email').value = p ? p.email : '';
 }
 
-// ── Period ──
+// ── Approval badge ──
+async function checkApprovalBadge() {
+  if (!siteId) return;
+  try {
+    const data = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
+    const mine = data.value.filter(i =>
+      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
+    );
+    const badge = document.getElementById('appr-badge');
+    if (mine.length) { badge.textContent = mine.length; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
+  } catch(e) {}
+}
+
+// ── Tabs ──
+function switchTab(name) {
+  ['form','list','approval','admin'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+    const btn = document.getElementById('tab-' + t + '-btn');
+    if (btn) btn.classList.toggle('active', t === name);
+  });
+  if (name === 'list')     loadMyList();
+  if (name === 'approval') loadApprovalQueue();
+  if (name === 'admin')    { allContractsCache = []; loadAdminList(); }
+}
+
+// ── Helpers ──
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+    ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+// ── My List ──
+async function loadMyList() {
+  if (!siteId) return;
+  const tbody = document.getElementById('list-body');
+  try {
+    const data = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500');
+    const mine = data.value
+      .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
+      .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
+    if (!mine.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c">등록된 신청이 없습니다.</td></tr>'; return; }
+    tbody.innerHTML = mine.map(item => {
+      const f = item.fields;
+      return '<tr onclick="showDetail(' + item.id + ')">' +
+        '<td>' + item.id + '</td>' +
+        '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td>' +
+        '<td>' + (f.ContractCompanyType||'-') + '</td>' +
+        '<td>' + (f.ContractType||'-') + '</td>' +
+        '<td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td>' +
+        '<td>' + fmtDate(f.RequestDate) + '</td></tr>';
+    }).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+}
+
+// ── Approval Queue ──
+async function loadApprovalQueue() {
+  if (!siteId) return;
+  const tbody = document.getElementById('appr-body');
+  try {
+    const data = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
+    const mine = data.value.filter(i =>
+      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
+    );
+    if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
+    const rows = await Promise.all(mine.map(async item => {
+      const f = item.fields;
+      let rf = {};
+      try { const r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + f.RequestID + '?$expand=fields'); rf = r.fields; } catch(e) {}
+      return '<tr>' +
+        '<td style="color:#0078d4;cursor:pointer" onclick="showDetail(' + f.RequestID + ')">' + f.RequestID + '</td>' +
+        '<td>' + (rf.RequesterEmail||'') + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (rf.Title||'') + '</td>' +
+        '<td>' + (rf.ContractCompanyType||'-') + '</td>' +
+        '<td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'대기') + '</span></td>' +
+        '<td>' + fmtDate(rf.RequestDate) + '</td>' +
+        '<td onclick="event.stopPropagation()">' +
+        '<button class="btn-primary" style="padding:3px 10px;font-size:12px" onclick="processApproval(' + item.id + ',\'승인\',' + f.RequestID + ')">승인</button> ' +
+        '<button class="btn-secondary" style="padding:3px 10px;font-size:12px" onclick="processApproval(' + item.id + ',\'반려\',' + f.RequestID + ')">반려</button>' +
+        '</td></tr>';
+    }));
+    tbody.innerHTML = rows.join('');
+    const badge = document.getElementById('appr-badge');
+    badge.textContent = mine.length; badge.style.display = 'inline';
+  } catch(e) { console.error(e); }
+}
+
+async function processApproval(apprId, action, reqId) {
+  const comment = prompt(action + ' 의견 (선택사항):');
+  if (comment === null) return;
+  loading(true);
+  try {
+    await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH', {
+      fields: { Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }
+    });
+    if (action === '반려') {
+      await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
+    } else {
+      // 다음 잠긴 결재자 활성화, 없으면 승인완료
+      const all = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
+      const next = all.value
+        .filter(i => i.fields.RequestID == reqId && i.fields.Status === '대기(잠김)')
+        .sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
+      if (next.length) {
+        await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
+      } else {
+        await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
+      }
+    }
+    alert(action + ' 처리되었습니다.');
+    await loadApprovalQueue();
+    await checkApprovalBadge();
+  } catch(e) { alert('오류: ' + e.message); }
+  finally { loading(false); }
+}
+
+// ── Admin List ──
+async function loadAdminList() {
+  if (!siteId) return;
+  const tbody = document.getElementById('admin-body');
+  const filterStatus = document.getElementById('admin-filter-status').value;
+  const filterSearch = (document.getElementById('admin-filter-search').value||'').toLowerCase();
+  try {
+    if (!allContractsCache.length) {
+      const data = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500');
+      allContractsCache = data.value.sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
+    }
+    let items = allContractsCache;
+    if (filterStatus) items = items.filter(i => i.fields.Status === filterStatus);
+    if (filterSearch) items = items.filter(i =>
+      (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch) ||
+      (i.fields.Title||'').toLowerCase().includes(filterSearch)
+    );
+    document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
+    tbody.innerHTML = items.map(item => {
+      const f = item.fields;
+      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')">' +
+        '<td>' + item.id + '</td>' +
+        '<td>' + (f.RequesterEmail||'') + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td>' +
+        '<td>' + (f.ContractCompanyType||'-') + '</td>' +
+        '<td>' + (f.ContractType||'-') + '</td>' +
+        '<td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td>' +
+        '<td>' + fmtDate(f.RequestDate) + '</td></tr>';
+    }).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+}
+
+// ── Show Detail ──
+async function showDetail(reqId) {
+  loading(true);
+  try {
+    const r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
+    const f = r.fields;
+    const sec = t => '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">' + t + '</div>';
+    const row = (l, v) => '<div class="modal-row"><div class="modal-label">' + l + '</div><div class="modal-value">' + (v||'-') + '</div></div>';
+    const statusColor = f.Status === '승인완료' ? '#107c10' : f.Status === '반려' ? '#a4262c' : f.Status === '처리중' ? '#0078d4' : '#7d5700';
+
+    let html = sec('기본 정보') +
+      row('번호', reqId) +
+      row('신청자', f.RequesterEmail) +
+      row('상태', '<span style="font-weight:600;color:' + statusColor + '">' + (f.Status||'') + '</span>') +
+      row('신청일', fmtDate(f.RequestDate)) +
+      sec('계약 정보') +
+      row('제목', f.Title) +
+      row('Type', f.ContractCompanyType) +
+      row('Contract Type', f.ContractType) +
+      row('Contract Partner', f.ContractPartner) +
+      row('Objective', f.Objective) +
+      row('Contract Value', f.ContractValue ? f.ContractValue + ' ' + (f.Currency||'') : '-') +
+      row('Contract Period', (f.PeriodType||'') + (f.PeriodStart ? ' | ' + f.PeriodStart + ' ~ ' + (f.PeriodEnd||'No end') : '')) +
+      row('Payment Term', f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-');
+
+    // Approvals
+    let apprHtml = '';
+    try {
+      const apprData = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
+      const apprList = apprData.value.filter(i => i.fields.RequestID == reqId).sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
+      if (apprList.length) {
+        const sc = { '대기':'#7d5700','승인':'#107c10','반려':'#a4262c','대기(잠김)':'#605e5c','승인완료':'#107c10' };
+        apprHtml = sec('결재 이력') + apprList.map(a => {
+          const af = a.fields;
+          return '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px">' +
+            '<div style="display:flex;justify-content:space-between">' +
+            '<span style="font-weight:500">' + (af.ApproverRole||'') + ' — ' + (af.ApproverName||af.ApproverEmail||'') + '</span>' +
+            '<span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:600">' + (af.Status||'') + '</span>' +
+            '</div>' +
+            (af.ApprovalDate ? '<div style="color:#605e5c;font-size:11px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
+            (af.Comment ? '<div style="margin-top:3px;background:#f3f2f1;border-radius:3px;padding:4px 7px;font-size:12px">💬 ' + af.Comment + '</div>' : '') +
+            '</div>';
+        }).join('');
+      }
+    } catch(e) {}
+
+    document.getElementById('modal-content').innerHTML = html + apprHtml;
+    document.getElementById('detail-modal').classList.add('show');
+  } catch(e) { alert('상세 조회 오류: ' + e.message); }
+  finally { loading(false); }
+}
+function closeModal() { document.getElementById('detail-modal').classList.remove('show'); }
+
+// ── Form helpers ──
 function onPeriod() {
   const noEnd = document.getElementById('chk-noend').checked;
   const el = document.getElementById('p-end');
-  el.disabled = noEnd;
-  if (noEnd) el.value = '';
+  el.disabled = noEnd; if (noEnd) el.value = '';
 }
-
-// ── DD radio ──
 function onDD(r) {
   document.getElementById('dd-id').disabled = r.value !== 'yes';
   document.getElementById('dd-no').disabled  = r.value !== 'no';
   if (r.value === 'yes') document.getElementById('dd-no').value = '';
   else document.getElementById('dd-id').value = '';
 }
-
-// ── Personal info ──
 function onPersonal(r) {
   const row = document.getElementById('std-row');
-  if (r.value === 'yes') { row.classList.add('show'); }
-  else {
-    row.classList.remove('show');
-    document.querySelectorAll('[name="stdcon"]').forEach(x => x.checked = false);
-    document.getElementById('stdcon-no').value = '';
-  }
+  if (r.value === 'yes') row.classList.add('show');
+  else { row.classList.remove('show'); document.querySelectorAll('[name="stdcon"]').forEach(x => x.checked = false); document.getElementById('stdcon-no').value = ''; }
 }
-
-// ── File reset ──
 function rf(id) { const el = document.getElementById(id); if (el) el.value = ''; }
 
 // ── Submit ──
 async function submitForm() {
-  // Validation
-  const req = [
-    ['sel-type',   'Type'],
-    ['f-title',    'Title of Contract'],
-    ['f-partner',  'Contract Partner'],
-    ['f-objective','Objective of Contract'],
-    ['f-currency', 'Contract Value Currency'],
-    ['f-ctype',    'Contract Type'],
+  const checks = [
+    ['sel-type','Type'],['f-title','Title of Contract'],
+    ['f-partner','Contract Partner'],['f-objective','Objective of Contract'],
+    ['f-currency','Contract Value Currency'],['f-ctype','Contract Type'],
   ];
-  for (const [id, label] of req) {
+  for (const [id, label] of checks) {
     const el = document.getElementById(id);
     if (!el.value.trim()) { alert(label + ' is required.'); el.focus(); return; }
   }
   if (!document.getElementById('f-value').value) { alert('Contract Value is required.'); return; }
   const periodOk = ['chk-lim','chk-auto','chk-noend'].some(id => document.getElementById(id).checked);
-  if (!periodOk) { alert('Please select a Contract Period type.'); return; }
-  if (!document.getElementById('p-start').value) { alert('Contract Period start date is required.'); return; }
-  if (!document.getElementById('f-doc').files.length) { alert('Contract document is required.'); return; }
+  if (!periodOk) { alert('Contract Period type을 선택해주세요.'); return; }
+  if (!document.getElementById('p-start').value) { alert('Contract Period start date가 필요합니다.'); return; }
+  if (!document.getElementById('f-doc').files.length) { alert('Contract document를 첨부해주세요.'); return; }
   if (!document.getElementById('a1-email').value) { alert('1차 결재자 (Line Manager)를 지정해주세요.'); return; }
 
   loading(true);
   try {
-    alert('✅ 제출이 완료되었습니다!\n\n(SharePoint 저장 로직은 리스트 구성 후 연결해주세요.)');
-    // TODO: SharePoint Contract 리스트 생성 후 아래처럼 연결
-    // const item = await api('/sites/' + siteId + '/lists/STK_Contracts/items', 'POST', { fields: { ... } });
+    const now = new Date().toISOString();
+    const periodType = ['chk-lim','chk-auto','chk-noend'].filter(id => document.getElementById(id).checked)
+      .map(id => ({ 'chk-lim':'Limited duration','chk-auto':'Auto-renewal','chk-noend':'No end date' })[id]).join(', ');
+
+    const fields = {
+      Title: document.getElementById('f-title').value.trim(),
+      ContractCompanyType: document.getElementById('sel-type').value,
+      ContractPartner: document.getElementById('f-partner').value.trim(),
+      Objective: document.getElementById('f-objective').value.trim(),
+      ContractValue: document.getElementById('f-value').value,
+      Currency: document.getElementById('f-currency').value,
+      ContractType: document.getElementById('f-ctype').value,
+      PeriodType: periodType,
+      PeriodStart: document.getElementById('p-start').value || '',
+      PeriodEnd: document.getElementById('p-end').value || '',
+      PaymentDays: document.getElementById('f-paydays').value || '',
+      Status: '대기',
+      RequesterEmail: user.username,
+      RequestDate: now,
+    };
+
+    const item = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', { fields });
+    const reqId = parseInt(item.id);
+
+    // 결재자 등록 (1차, 2차 선택 + 3차, 4차 고정)
+    const approvers = [
+      { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(Line Manager)', order: 1 },
+    ];
+    if (document.getElementById('a2-email').value) {
+      approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(부서장)', order: 2 });
+    }
+    approvers.push(A3);
+    approvers.push(A4);
+
+    for (const a of approvers) {
+      await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
+        Title: reqId + '-' + a.order,
+        RequestID: reqId,
+        ApproverEmail: a.email,
+        ApproverName: a.name,
+        ApproverRole: a.role,
+        ApprovalOrder: a.order,
+        Status: a.order === 1 ? '대기' : '대기(잠김)'
+      }});
+    }
+
+    alert('✅ 신청이 완료되었습니다! (번호: ' + reqId + ')');
+    resetForm();
+    switchTab('list');
   } catch(e) { alert('오류: ' + e.message); }
   finally { loading(false); }
 }
 
-// ── Reset ──
-function resetAll() {
-  if (!confirm('Reset all fields?')) return;
-  document.querySelectorAll('input[type="text"],input[type="number"]').forEach(el => el.value = '');
-  document.querySelectorAll('select').forEach(el => { if (el.id !== 'company') el.selectedIndex = 0; });
-  document.querySelectorAll('input[type="checkbox"],input[type="radio"]').forEach(el => el.checked = false);
-  document.querySelectorAll('input[type="file"]').forEach(el => el.value = '');
-  document.querySelectorAll('input[type="date"]').forEach(el => { el.value = ''; el.disabled = false; });
+// ── Reset Form ──
+function resetForm() {
+  document.querySelectorAll('#tab-form input[type="text"], #tab-form input[type="number"]').forEach(el => { if (!el.readOnly) el.value = ''; });
+  document.querySelectorAll('#tab-form select').forEach(el => { if (el.id !== 'company') el.selectedIndex = 0; });
+  document.querySelectorAll('#tab-form input[type="checkbox"], #tab-form input[type="radio"]').forEach(el => el.checked = false);
+  document.querySelectorAll('#tab-form input[type="file"]').forEach(el => el.value = '');
+  document.querySelectorAll('#tab-form input[type="date"]').forEach(el => { el.value = ''; el.disabled = false; });
   document.getElementById('dd-id').disabled = true;
   document.getElementById('dd-no').disabled  = true;
   document.getElementById('std-row').classList.remove('show');
-  // approver dropdowns reset
-  [1,2,3,4].forEach(i => {
-    const team = document.getElementById('a' + i + '-team');
-    const person = document.getElementById('a' + i + '-person');
-    team.innerHTML   = '<option value="">팀</option>';   team.disabled   = true;
-    person.innerHTML = '<option value="">직원 선택</option>'; person.disabled = true;
+  [1, 2].forEach(i => {
+    ['team','person'].forEach(k => {
+      const el = document.getElementById('a' + i + '-' + k);
+      el.innerHTML = k === 'team' ? '<option value="">팀</option>' : '<option value="">직원 선택</option>';
+      el.disabled = true;
+    });
+    document.getElementById('a' + i + '-name').value  = '';
+    document.getElementById('a' + i + '-email').value = '';
   });
-  [1,2,3,4].forEach(i => populateDepts(i));
+  [1, 2].forEach(i => populateDepts(i));
 }
 
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
-function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+function showLoginError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 
 // ── MSAL Init ──
 (async () => {
