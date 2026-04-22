@@ -663,17 +663,8 @@ async function loadMyList() {
     const mine = data.value
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
-    if (!mine.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c">등록된 신청이 없습니다.</td></tr>'; return; }
-    tbody.innerHTML = mine.map(item => {
-      const f = item.fields;
-      return '<tr onclick="showDetail(' + item.id + ')">' +
-        '<td>' + item.id + '</td>' +
-        '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td>' +
-        '<td>' + (f.ContractCompanyType||'-') + '</td>' +
-        '<td>' + (f.ContractType||'-') + '</td>' +
-        '<td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td>' +
-        '<td>' + fmtDate(f.RequestDate) + '</td></tr>';
-    }).join('');
+    if (!mine.length) { pgSet('list', [], null, '등록된 신청이 없습니다.', 6); return; }
+    pgSet('list', mine, item => { const f = item.fields; return '<tr onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '등록된 신청이 없습니다.', 6);
   } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
@@ -686,7 +677,7 @@ async function loadApprovalQueue() {
     const mine = data.value
       .filter(i => (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기')
       .sort((a, b) => b.fields.RequestID - a.fields.RequestID);
-    if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
+    if (!mine.length) { pgSet('appr', [], null, '결재 대기 항목이 없습니다.', 7); return; }
     const rows = await Promise.all(mine.map(async item => {
       const f = item.fields;
       let rf = {};
@@ -703,7 +694,7 @@ async function loadApprovalQueue() {
         '<button class="btn-secondary" style="padding:3px 10px;font-size:12px" onclick="processApproval(' + item.id + ',\'반려\',' + f.RequestID + ')">반려</button>' +
         '</td></tr>';
     }));
-    tbody.innerHTML = rows.join('');
+    pgSet('appr', rows, r => r, '결재 대기 항목이 없습니다.', 7);
     const badge = document.getElementById('appr-badge');
     badge.textContent = mine.length; badge.style.display = 'inline';
   } catch(e) { console.error(e); }
@@ -756,17 +747,7 @@ async function loadAdminList() {
       (i.fields.Title||'').toLowerCase().includes(filterSearch)
     );
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
-    tbody.innerHTML = items.map(item => {
-      const f = item.fields;
-      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')">' +
-        '<td>' + item.id + '</td>' +
-        '<td>' + (f.RequesterEmail||'') + '</td>' +
-        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td>' +
-        '<td>' + (f.ContractCompanyType||'-') + '</td>' +
-        '<td>' + (f.ContractType||'-') + '</td>' +
-        '<td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td>' +
-        '<td>' + fmtDate(f.RequestDate) + '</td></tr>';
-    }).join('');
+    pgSet('admin', items, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
   } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
