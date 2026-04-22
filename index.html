@@ -290,16 +290,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="form-group" style="margin-bottom:14px">
         <label>Contract document <span class="req">*</span></label>
         <div class="file-group">
-          <div class="file-row"><input type="file" id="f-doc"><button class="btn-file-reset" onclick="rf('f-doc')">Reset</button></div>
+          <div class="file-row"><input type="file" id="f-doc" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('f-doc')">Reset</button></div>
         </div>
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label>Attachment</label>
         <div class="file-group">
-          <div class="file-row"><input type="file" id="att1"><button class="btn-file-reset" onclick="rf('att1')">Reset</button></div>
-          <div class="file-row"><input type="file" id="att2"><button class="btn-file-reset" onclick="rf('att2')">Reset</button></div>
-          <div class="file-row"><input type="file" id="att3"><button class="btn-file-reset" onclick="rf('att3')">Reset</button></div>
-          <div class="file-row"><input type="file" id="att4"><button class="btn-file-reset" onclick="rf('att4')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att1" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att1')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att2" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att2')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att3" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att3')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att4" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att4')">Reset</button></div>
+          <div style="font-size:11px;color:#605e5c;margin-top:4px">※ 파일 1개당 최대 20MB / 전체 합계 최대 20MB</div>
         </div>
       </div>
 
@@ -868,6 +869,14 @@ function onPersonal(r) {
   else { row.classList.remove('show'); document.querySelectorAll('[name="stdcon"]').forEach(x => x.checked = false); document.getElementById('stdcon-no').value = ''; }
 }
 function rf(id) { const el = document.getElementById(id); if (el) el.value = ''; }
+function checkFileSize(input) {
+  if (!input.files[0]) return;
+  const mb = input.files[0].size / 1024 / 1024;
+  if (mb > 20) {
+    alert(input.files[0].name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(20MB)을 초과합니다.');
+    input.value = '';
+  }
+}
 
 // ── Submit ──
 async function submitForm() {
@@ -885,6 +894,19 @@ async function submitForm() {
   if (!periodOk) { alert('Contract Period type을 선택해주세요.'); return; }
   if (!document.getElementById('p-start').value) { alert('Contract Period start date가 필요합니다.'); return; }
   if (!document.getElementById('f-doc').files.length) { alert('Contract document를 첨부해주세요.'); return; }
+  // 파일 용량 검증 (파일당 최대 20MB, 전체 합계 최대 20MB)
+  const _fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
+  const MAX_MB = 20;
+  let _totalMB = 0;
+  for (const fid of _fileIds) {
+    const el = document.getElementById(fid);
+    if (el && el.files[0]) {
+      const mb = el.files[0].size / 1024 / 1024;
+      if (mb > MAX_MB) { alert(el.files[0].name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(20MB)을 초과합니다.'); el.value = ''; return; }
+      _totalMB += mb;
+    }
+  }
+  if (_totalMB > MAX_MB) { alert('첨부파일 전체 합계(' + _totalMB.toFixed(1) + 'MB)가 최대 허용 용량(20MB)을 초과합니다.'); return; }
   if (!document.getElementById('a1-email').value) { alert('1차 결재자 (Line Manager)를 지정해주세요.'); return; }
 
   loading(true);
