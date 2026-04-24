@@ -372,9 +372,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="comp-row">
         <div class="comp-label">Final signing off?</div>
         <div class="comp-opts sign-opts">
-          <label><input type="checkbox" value="authorized person's signatures"> authorized person's signatures</label>
-          <label><input type="checkbox" value="signatures and corporate chop"> signatures and corporate chop</label>
-          <label><input type="checkbox" value="chop only"> chop only</label>
+          <label><input type="checkbox" value="authorized person's signatures" onchange="updateCFO_CEO()"> authorized person's signatures</label>
+          <label><input type="checkbox" value="signatures and corporate chop" onchange="updateCFO_CEO()"> signatures and corporate chop</label>
+          <label><input type="checkbox" value="chop only" onchange="updateCFO_CEO()"> chop only</label>
         </div>
       </div>
 
@@ -428,6 +428,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <div class="appr-info">
           <input type="text"  value="Gina Shin" readonly>
           <input type="email" value="gina.shin@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- 5차: CFO — 조건부 (Final signing off: corporate chop / chop only) -->
+      <div class="appr-block" id="appr-block-5" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
+        <div class="appr-title" style="color:#b45309">5차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Martin Schindele" readonly>
+          <input type="email" value="martin.s.schindele@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- 6차: CEO — 조건부 -->
+      <div class="appr-block" id="appr-block-6" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
+        <div class="appr-title" style="color:#b45309">6차 결재자 <span class="hint">— CEO (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Antonio Randazzo" readonly>
+          <input type="email" value="antonio.randazzo@hyosung.com" readonly>
         </div>
       </div>
 
@@ -876,6 +894,17 @@ function onPersonal(r) {
   else { row.classList.remove('show'); document.querySelectorAll('[name="stdcon"]').forEach(x => x.checked = false); document.getElementById('stdcon-no').value = ''; }
 }
 function rf(id) { const el = document.getElementById(id); if (el) el.value = ''; }
+
+// Final signing off 체크박스 변경 시 5,6차 결재자 블록 표시/숨김
+function updateCFO_CEO() {
+  const checked = Array.from(document.querySelectorAll('#tab-form .sign-opts input[type="checkbox"]:checked'))
+    .map(cb => cb.value.toLowerCase());
+  const need = checked.some(v => v.includes('corporate chop') || v === 'chop only');
+  const b5 = document.getElementById('appr-block-5');
+  const b6 = document.getElementById('appr-block-6');
+  if (b5) b5.style.display = need ? 'block' : 'none';
+  if (b6) b6.style.display = need ? 'block' : 'none';
+}
 function checkFileSize(input) {
   if (!input.files[0]) return;
   const mb = input.files[0].size / 1024 / 1024;
