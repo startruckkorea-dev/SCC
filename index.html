@@ -372,13 +372,18 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="comp-row">
         <div class="comp-label">Final signing off?</div>
         <div class="comp-opts sign-opts">
-          <label><input type="checkbox"> authorized person's signatures</label>
-          <label><input type="checkbox"> signatures and corporate chop</label>
-          <label><input type="checkbox"> chop only</label>
+          <label><input type="checkbox" value="authorized person's signatures"> authorized person's signatures</label>
+          <label><input type="checkbox" value="signatures and corporate chop"> signatures and corporate chop</label>
+          <label><input type="checkbox" value="chop only"> chop only</label>
         </div>
       </div>
 
       <div class="section-title">5. 결재자 지정 (Approvers)</div>
+      <div style="font-size:11px;color:#605e5c;background:#f9f8f7;border:1px solid #edebe9;border-radius:4px;padding:8px 12px;margin-bottom:12px;line-height:1.8">
+        <b>결재 라인 구성 기준</b><br>
+        1차 RBO Director · 2차 Legal Director · 3차 Compliance Director · 4차 Accounting Director <span style="color:#0078d4">(기본 고정)</span><br>
+        5차 CFO (Martin Schindele) · 6차 CEO (Antonio Randazzo) — <span style="color:#a4262c"><b>Final signing off에서 "corporate chop" 또는 "chop only" 선택 시 자동 추가</b></span>
+      </div>
 
       <!-- 1차: Line Manager (선택) -->
       <div class="appr-block">
@@ -509,8 +514,10 @@ const ADMIN_EMAILS = [
   'admin@startruckkorea.onmicrosoft.com'
 ];
 // 고정 결재자
-const A3 = { name: 'Eunjung Seo', email: 'eunjung.seo@hyosung.com', role: '3차결재자(Legal&Compliance)', order: 3 };
-const A4 = { name: 'Gina Shin',   email: 'gina.shin@hyosung.com',   role: '4차결재자(Accounting팀장)',   order: 4 };
+const A3 = { name: 'Eunjung Seo',     email: 'eunjung.seo@hyosung.com',        role: '3차결재자(Compliance Director)', order: 3 };
+const A4 = { name: 'Gina Shin',       email: 'gina.shin@hyosung.com',          role: '4차결재자(Accounting Director)', order: 4 };
+const A5 = { name: 'Martin Schindele',email: 'martin.s.schindele@hyosung.com', role: '5차결재자(CFO)',                 order: 5 };
+const A6 = { name: 'Antonio Randazzo',email: 'antonio.randazzo@hyosung.com',   role: '6차결재자(CEO)',                 order: 6 };
 
 let msalApp = null, user = null, siteId = null;
 let employeeData = [];
@@ -946,7 +953,7 @@ async function submitForm() {
     const smrVal    = document.querySelector('input[name="smr"]:checked')?.value || '';
     const signChecked = [];
     document.querySelectorAll('#tab-form .sign-opts input[type="checkbox"]:checked').forEach(cb => {
-      signChecked.push(cb.parentElement.textContent.trim());
+      signChecked.push(cb.value || cb.parentElement.textContent.trim());
     });
 
     const fields = {
@@ -1009,15 +1016,23 @@ async function submitForm() {
       } catch(fe) { console.error('Drive error:', fe); }
     }
 
-    // 결재자 등록 (1차, 2차 선택 + 3차, 4차 고정)
+    // 결재자 등록
+    // 4, 5차 (CFO/CEO) 조건: Final signing off에서 "corporate chop" 또는 "chop only" 선택 시
+    const signOffVal = (signChecked.join(' ')).toLowerCase();
+    const needCFO_CEO = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
+
     const approvers = [
-      { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(Line Manager)', order: 1 },
+      { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(RBO Director)', order: 1 },
     ];
     if (document.getElementById('a2-email').value) {
-      approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(부서장)', order: 2 });
+      approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Legal Director)', order: 2 });
     }
-    approvers.push(A3);
-    approvers.push(A4);
+    approvers.push(A3); // 3차: Compliance Director (고정)
+    approvers.push(A4); // 4차: Accounting Director (고정)
+    if (needCFO_CEO) {
+      approvers.push(A5); // 5차: CFO (조건부)
+      approvers.push(A6); // 6차: CEO (조건부)
+    }
 
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
