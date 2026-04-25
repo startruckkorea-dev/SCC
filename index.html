@@ -586,6 +586,22 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 </div>
 
 
+
+<!-- 통합 결재함 모달 -->
+<div id="unified-modal" onclick="if(event.target===this)closeUnifiedAppr()">
+  <div class="unified-box">
+    <div class="unified-header">
+      <div>
+        <div class="unified-title">📬 나의 통합 결재함</div>
+        <div class="unified-sub">STK 결재 시스템 전체 대기 항목</div>
+      </div>
+      <button class="unified-close" onclick="closeUnifiedAppr()">✕</button>
+    </div>
+    <div class="unified-body" id="unified-body">
+      <div style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</div>
+    </div>
+  </div>
+</div>
 <!-- 결재 확인 팝업 -->
 <div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:10px;padding:28px 28px 20px;max-width:420px;width:92%;box-shadow:0 4px 24px rgba(0,0,0,.2)">
