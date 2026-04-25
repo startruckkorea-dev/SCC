@@ -1287,7 +1287,7 @@ document.addEventListener('click', async function(e) {
   try {
     const t = await token();
     const res = await fetch(
-      GRAPH + '/drives/' + driveId + '/items/' + itemId,
+      GRAPH + '/drives/' + driveId + '/items/' + itemId + '?select=id,name,%40microsoft.graph.downloadUrl,webUrl',
       { headers: { Authorization: 'Bearer ' + t } }
     );
     if (!res.ok) throw new Error('파일 정보 조회 실패 (' + res.status + ')');
