@@ -616,7 +616,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <button class="unified-close" onclick="closeUnifiedAppr()">✕</button>
     </div>
     <div class="unified-body" id="unified-body">
-      <div style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</div>
+      
     </div>
   </div>
 </div>
@@ -1558,7 +1558,7 @@ async function loadUnifiedBadge() {
 
 async function openUnifiedAppr() {
   document.getElementById('unified-modal').classList.add('open');
-  document.getElementById('unified-body').innerHTML = '<div style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</div>';
+  document.getElementById('unified-body').innerHTML = '';
   await loadUnifiedData();
 }
 function closeUnifiedAppr() {
