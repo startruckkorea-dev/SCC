@@ -455,8 +455,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="section-title">5. 결재자 지정 (Approvers)</div>
       <div style="font-size:11px;color:#605e5c;background:#f9f8f7;border:1px solid #edebe9;border-radius:4px;padding:8px 12px;margin-bottom:12px;line-height:1.8">
         <b>결재 라인 구성 기준</b><br>
-        1차 RBO Director · 2차 Legal Director · 3차 Compliance Director · 4차 Accounting Director <span style="color:#0078d4">(기본 고정)</span><br>
-        5차 CFO (Martin Schindele) · 6차 CEO (Antonio Randazzo) — <span style="color:#a4262c"><b>Final signing off에서 "corporate chop" 또는 "chop only" 선택 시 자동 추가</b></span>
+        1차 RBO Director · 2차 Legal Director · 3차 Compliance Director <span style="color:#0078d4">(기본 고정)</span><br>
+        <b style="color:#0078d4">Type = Sales</b> 인 경우: 4차 Jungho Yoo (Contract Checklist) 추가<br>
+        5차 Accounting Director · <b>Final signing off에서 "corporate chop" 또는 "chop only" 선택 시</b>: 6차 CFO · 7차 CEO 자동 추가<br>
+        <b style="color:#a4262c">최종 결재자: 항상 Keuntae Dong (RD)</b>
       </div>
 
       <!-- 1차: Line Manager (선택) -->
@@ -642,10 +644,12 @@ const ADMIN_EMAILS = [
   'admin@startruckkorea.onmicrosoft.com'
 ];
 // 고정 결재자
-const A3 = { name: 'Eunjung Seo',     email: 'eunjung.seo@hyosung.com',        role: '3차결재자(Compliance Director)', order: 3 };
-const A4 = { name: 'Gina Shin',       email: 'gina.shin@hyosung.com',          role: '4차결재자(Accounting Director)', order: 4 };
-const A5 = { name: 'Martin Schindele',email: 'martin.s.schindele@hyosung.com', role: '5차결재자(CFO)',                 order: 5 };
-const A6 = { name: 'Antonio Randazzo',email: 'antonio.randazzo@hyosung.com',   role: '6차결재자(CEO)',                 order: 6 };
+const A3  = { name: 'Eunjung Seo',     email: 'eunjung.seo@hyosung.com',        role: '3차결재자(Compliance Director)', order: 3 };
+const A4S = { name: 'Jungho Yoo',      email: 'jungho.yoo@hyosung.com',         role: '4차결재자(Contract Checklist)',  order: 4 }; // Sales 전용
+const A5  = { name: 'Gina Shin',       email: 'gina.shin@hyosung.com',          role: '5차결재자(Accounting Director)', order: 5 };
+const A6  = { name: 'Martin Schindele',email: 'martin.s.schindele@hyosung.com', role: '6차결재자(CFO)',                 order: 6 };
+const A7  = { name: 'Antonio Randazzo',email: 'antonio.randazzo@hyosung.com',   role: '7차결재자(CEO)',                 order: 7 };
+const ARD = { name: 'Keuntae Dong',    email: 'keuntae.dong@hyosung.com',       role: 'RD (최종)',                     order: 99 }; // 최종 항상 추가
 
 let msalApp = null, user = null, siteId = null;
 let employeeData = [];
@@ -1206,6 +1210,7 @@ async function submitForm() {
     const signOffVal = (signChecked.join(' ')).toLowerCase();
     const needCFO_CEO = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
 
+    const isSales = document.getElementById('sel-type').value === 'Sales';
     const approvers = [
       { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(RBO Director)', order: 1 },
     ];
@@ -1213,11 +1218,17 @@ async function submitForm() {
       approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Legal Director)', order: 2 });
     }
     approvers.push(A3); // 3차: Compliance Director (고정)
-    approvers.push(A4); // 4차: Accounting Director (고정)
+    if (isSales) approvers.push(A4S); // 4차: Contract Checklist - Jungho Yoo (Sales 전용)
+    // Sales면 5차부터, Non-Sales면 4차부터 Accounting
+    const acctOrder = isSales ? 5 : 4;
+    approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Director)' });
     if (needCFO_CEO) {
-      approvers.push(A5); // 5차: CFO (조건부)
-      approvers.push(A6); // 6차: CEO (조건부)
+      approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
+      approvers.push({ ...A7, order: acctOrder+2, role: (acctOrder+2)+'차결재자(CEO)' });
     }
+    // 최종: 항상 RD (Keuntae Dong)
+    const lastOrder = needCFO_CEO ? (acctOrder+3) : (acctOrder+1);
+    approvers.push({ ...ARD, order: lastOrder, role: lastOrder+'차결재자(RD)' });
 
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
