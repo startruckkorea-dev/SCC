@@ -297,7 +297,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
         <div class="form-group">
           <label>Type <span class="req">*</span></label>
-          <select id="sel-type">
+          <select id="sel-type" onchange="updateApproverBlocks()">
             <option value="">-- Choice Type --</option>
             <option>Sales</option><option>Non-Sales</option>
           </select>
@@ -498,30 +498,48 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
 
-      <!-- 4차: Accounting 팀장 — 고정 -->
-      <div class="appr-block">
-        <div class="appr-title">4차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span></div>
+      <!-- 4차: Jungho Yoo — Sales 전용 조건부 -->
+      <div class="appr-block" id="appr-block-jungho" style="display:none;border:1px solid #bfdbfe;background:#eff6ff">
+        <div class="appr-title" style="color:#1d4ed8">4차 결재자 <span class="hint">— Contract Checklist / Sales 전용 (자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Jungho Yoo" readonly>
+          <input type="email" value="jungho.yoo@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- Accounting: Sales면 5차, Non-Sales면 4차 -->
+      <div class="appr-block" id="appr-block-acct">
+        <div class="appr-title" id="appr-acct-title">4차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span></div>
         <div class="appr-info">
           <input type="text"  value="Gina Shin" readonly>
           <input type="email" value="gina.shin@hyosung.com" readonly>
         </div>
       </div>
 
-      <!-- 5차: CFO — 조건부 (Final signing off: corporate chop / chop only) -->
+      <!-- CFO — 조건부 (Final signing off: corporate chop / chop only) -->
       <div class="appr-block" id="appr-block-5" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
-        <div class="appr-title" style="color:#b45309">5차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-title" style="color:#b45309" id="appr-cfo-title">5차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span></div>
         <div class="appr-info">
           <input type="text"  value="Martin Schindele" readonly>
           <input type="email" value="martin.s.schindele@hyosung.com" readonly>
         </div>
       </div>
 
-      <!-- 6차: CEO — 조건부 -->
+      <!-- CEO — 조건부 -->
       <div class="appr-block" id="appr-block-6" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
-        <div class="appr-title" style="color:#b45309">6차 결재자 <span class="hint">— CEO (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-title" style="color:#b45309" id="appr-ceo-title">6차 결재자 <span class="hint">— CEO (Final signing off 조건 충족 시 자동 추가)</span></div>
         <div class="appr-info">
           <input type="text"  value="Antonio Randazzo" readonly>
           <input type="email" value="antonio.randazzo@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- 최종: RD — chop 조건 시에만 표시 -->
+      <div class="appr-block" id="appr-block-rd" style="display:none;border:1px solid #fecaca;background:#fff5f5">
+        <div class="appr-title" style="color:#b91c1c" id="appr-rd-title">최종 결재자 <span class="hint">— RD (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Keuntae Dong" readonly>
+          <input type="email" value="keuntae.dong@hyosung.com" readonly>
         </div>
       </div>
 
@@ -833,7 +851,7 @@ async function loadApprovalQueue() {
     dynLoadEnd(); pgSet('appr', rows, function(r){ return r; }, '결재 대기 항목이 없습니다.', 7);
     const badge = document.getElementById('appr-badge');
     badge.textContent = mine.length; badge.style.display = 'inline';
-  } catch(e) { console.error('loadApprovalQueue error:', e); }
+  } catch(e) { console.error('loadApprovalQueue error:', e); dynLoadEnd(); }
 }
 
 
@@ -1218,17 +1236,16 @@ async function submitForm() {
       approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Legal Director)', order: 2 });
     }
     approvers.push(A3); // 3차: Compliance Director (고정)
-    if (isSales) approvers.push(A4S); // 4차: Contract Checklist - Jungho Yoo (Sales 전용)
-    // Sales면 5차부터, Non-Sales면 4차부터 Accounting
+    if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
     const acctOrder = isSales ? 5 : 4;
     approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Director)' });
     if (needCFO_CEO) {
+      // chop 조건: CFO → CEO → RD 순으로 추가
       approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
       approvers.push({ ...A7, order: acctOrder+2, role: (acctOrder+2)+'차결재자(CEO)' });
+      approvers.push({ ...ARD, order: acctOrder+3, role: (acctOrder+3)+'차결재자(RD)' });
     }
-    // 최종: 항상 RD (Keuntae Dong)
-    const lastOrder = needCFO_CEO ? (acctOrder+3) : (acctOrder+1);
-    approvers.push({ ...ARD, order: lastOrder, role: lastOrder+'차결재자(RD)' });
+    // chop 조건 없으면 Gina Shin이 마지막 (RD 추가 안 함)
 
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
