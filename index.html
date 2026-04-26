@@ -824,7 +824,7 @@ async function loadMyList() {
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '등록된 신청이 없습니다.', 6); return; }
     dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '등록된 신청이 없습니다.', 6);
-  } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
 // ── Approval Queue ──
@@ -938,7 +938,7 @@ async function loadAdminList() {
     );
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
     dynLoadEnd(); pgSet('admin', items, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
-  } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
 // ── Show Detail ──
@@ -1074,14 +1074,40 @@ function onPersonal(r) {
 function rf(id) { const el = document.getElementById(id); if (el) el.value = ''; }
 
 // Final signing off 체크박스 변경 시 5,6차 결재자 블록 표시/숨김
-function updateCFO_CEO() {
-  const checked = Array.from(document.querySelectorAll('#tab-form .sign-opts input[type="checkbox"]:checked'))
+function updateCFO_CEO() { updateApproverBlocks(); }
+
+function updateApproverBlocks() {
+  const isSales = (document.getElementById('sel-type').value || '') === 'Sales';
+  const checked = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
     .map(cb => cb.value.toLowerCase());
-  const need = checked.some(v => v.includes('corporate chop') || v === 'chop only');
+  const needChop = checked.some(v => v.includes('corporate chop') || v === 'chop only');
+
+  // 4차: Jungho Yoo — Sales일 때만
+  const bJ = document.getElementById('appr-block-jungho');
+  if (bJ) bJ.style.display = isSales ? 'block' : 'none';
+
+  // Accounting 차수 표시 업데이트
+  const acctOrder = isSales ? 5 : 4;
+  const acctTitle = document.getElementById('appr-acct-title');
+  if (acctTitle) acctTitle.innerHTML = acctOrder + '차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span>';
+
+  // CFO/CEO/RD — chop 조건 시에만
   const b5 = document.getElementById('appr-block-5');
   const b6 = document.getElementById('appr-block-6');
-  if (b5) b5.style.display = need ? 'block' : 'none';
-  if (b6) b6.style.display = need ? 'block' : 'none';
+  const bRD = document.getElementById('appr-block-rd');
+  if (b5) b5.style.display = needChop ? 'block' : 'none';
+  if (b6) b6.style.display = needChop ? 'block' : 'none';
+  if (bRD) bRD.style.display = needChop ? 'block' : 'none';
+
+  if (needChop) {
+    const cfoO = acctOrder + 1, ceoO = acctOrder + 2, rdO = acctOrder + 3;
+    const cfoT = document.getElementById('appr-cfo-title');
+    const ceoT = document.getElementById('appr-ceo-title');
+    const rdT  = document.getElementById('appr-rd-title');
+    if (cfoT) cfoT.innerHTML = cfoO + '차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span>';
+    if (ceoT) ceoT.innerHTML = ceoO + '차 결재자 <span class="hint">— CEO (Final signing off 조건 충족 시 자동 추가)</span>';
+    if (rdT)  rdT.innerHTML  = rdO  + '차 결재자 <span class="hint">— RD (최종)</span>';
+  }
 }
 function checkFileSize(input) {
   if (!input.files[0]) return;
