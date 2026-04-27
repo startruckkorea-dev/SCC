@@ -663,8 +663,9 @@ const SCOPES      = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
 const LIST_REQ    = 'STK_Contracts';      // SharePoint 리스트 이름 (신청)
 const LIST_APR    = 'STK_ContractApprovals'; // SharePoint 리스트 이름 (결재)
 const ADMIN_EMAILS = [
-  'eunjung.seo@hyosung.com',
-  'admin@startruckkorea.onmicrosoft.com'
+  'admin@startruckkorea.onmicrosoft.com',
+  'hye-jin.yun@hyosung.com',
+  'hyojung.kim@hyosung.com',
 ];
 // 고정 결재자
 const A3  = { name: 'Junsoon Lee (TEST)', email: 'jimmy.lee@hyosung.com', role: '3차결재자(Compliance Director)', order: 3 };
@@ -723,7 +724,11 @@ async function boot(account) {
     await loadEmployees();
     await checkApprovalBadge();
     // 관리자 탭
-    if (ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.username.toLowerCase())) {
+    const _adminEmails = ADMIN_EMAILS.map(e => e.toLowerCase());
+    const _ue = (user.email||'').toLowerCase();
+    const _un = (user.username||'').toLowerCase();
+    const _uu = (user.idTokenClaims?.preferred_username||user.idTokenClaims?.upn||'').toLowerCase();
+    if (_adminEmails.includes(_ue) || _adminEmails.includes(_un) || _adminEmails.includes(_uu)) {
       document.getElementById('tab-admin-btn').style.display = 'block';
     }
   } catch(e) { alert('SharePoint 연결 오류: ' + e.message); }
