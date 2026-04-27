@@ -915,7 +915,14 @@ async function processApproval(apprId, action, reqId, comment='') {
       } else {
         await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
         // ── 최종 승인 완료: 워터마크 + 해시 + Approved_Contracts 보관 ──
-        try { await processApprovedContract(reqId); } catch(e) { console.error('승인 후처리 오류:', e); }
+        try {
+          console.log('🔄 최종 승인 후처리 시작 (reqId:', reqId, ')');
+          await processApprovedContract(reqId);
+          console.log('✅ 최종 승인 후처리 완료');
+        } catch(e) {
+          console.error('❌ 승인 후처리 오류:', e);
+          alert('승인은 완료되었으나 파일 처리 중 오류가 발생했습니다.\n오류: ' + e.message);
+        }
       }
     }
     alert(action + ' 처리되었습니다.');
@@ -1005,18 +1012,23 @@ async function processApprovedContract(reqId) {
     }
     // Word/PPT/Excel 등은 원본 그대로 저장 + 파일명으로 승인 표시
 
-    // 7. Approved_Contracts 폴더에 저장
-    const uploadPath = `Approved_Contracts/${reqId}/${savedName}`;
+    // 7. Approved_Contracts 폴더에 저장 (각 경로 세그먼트만 인코딩)
+    const uploadPath = `Approved_Contracts/${reqId}/${encodeURIComponent(savedName)}`;
+    console.log('업로드 시도:', uploadPath);
     const uploadResp = await fetch(
-      `https://graph.microsoft.com/v1.0/drives/${docDrive.id}/root:/${encodeURIComponent(uploadPath)}:/content`,
+      `https://graph.microsoft.com/v1.0/drives/${docDrive.id}/root:/${uploadPath}:/content`,
       {
         method: 'PUT',
         headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/octet-stream' },
         body: finalBytes
       }
     );
+    if (!uploadResp.ok) {
+      const errText = await uploadResp.text();
+      console.error('업로드 실패:', uploadResp.status, errText);
+    }
     const uploadedItem = uploadResp.ok ? await uploadResp.json() : null;
-    console.log('Approved_Contracts 저장 완료:', savedName);
+    console.log('Approved_Contracts 저장 완료:', savedName, uploadedItem?.webUrl);
 
     // 8. 해시 + 승인 정보 SharePoint 리스트에 기록
     try {
@@ -1065,7 +1077,7 @@ async function processApprovedContract(reqId) {
         message: {
           subject: `[STK Contract] ✅ Approval Completed - Contract #${reqId}: ${f.Title||''}`,
           body: { contentType: 'HTML', content: mailBody },
-          toRecipients: [{ emailAddress: { address: f.RequesterEmail } }]
+          toRecipients: [{ emailAddress: { address: f.RequesterEmail || user.email || user.username } }]
         }
       })
     });
