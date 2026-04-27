@@ -909,6 +909,8 @@ async function processApproval(apprId, action, reqId, comment='') {
         await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
       } else {
         await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
+        // ── 최종 승인 완료: 워터마크 + 해시 + Approved_Contracts 보관 ──
+        try { await processApprovedContract(reqId); } catch(e) { console.error('승인 후처리 오류:', e); }
       }
     }
     alert(action + ' 처리되었습니다.');
@@ -916,6 +918,210 @@ async function processApproval(apprId, action, reqId, comment='') {
     await checkApprovalBadge();
   } catch(e) { alert('오류: ' + e.message); }
   finally { loading(false); }
+}
+
+// ════════════════════════════════════════════
+// 최종 승인 후처리: 워터마크 + 해시 + Approved_Contracts 보관 + 완료 메일
+// ════════════════════════════════════════════
+async function processApprovedContract(reqId) {
+  const t = await token();
+
+  // 1. 계약 정보 가져오기
+  const reqData = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
+  const f = reqData.fields;
+  const approvedDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // 워터마크 텍스트
+  const wmText = `APPROVED - ${approvedDate} | Contract #${reqId} | Approved by: STK Contract Checklist`;
+
+  // 2. AttachedFiles에서 파일 목록 파싱
+  if (!f.AttachedFiles) { console.log('첨부파일 없음 - 스킵'); return; }
+
+  let cleanFiles = f.AttachedFiles.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
+  const fileEntries = cleanFiles.split(/[;
+]+/).filter(e => e.trim() && e.includes('||'));
+
+  // 3. AttachedFiles 드라이브 가져오기
+  const drivesData = await api('/sites/' + siteId + '/drives');
+  const attDrive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+
+  // 4. Approved_Contracts 폴더 확인/생성 (문서 라이브러리)
+  const docDrive = drivesData.value.find(d => d.name === '문서') || drivesData.value.find(d => d.name === 'Documents') || drivesData.value[0];
+
+  // 파일별 처리
+  for (const entry of fileEntries) {
+    const sep = entry.indexOf('||');
+    if (sep < 0) continue;
+    const origName = entry.substring(0, sep);
+    const rest = entry.substring(sep + 2);
+
+    let driveId, itemId;
+    if (rest.startsWith('ENC||')) {
+      try {
+        const decoded = decodeURIComponent(escape(atob(rest.substring(5))));
+        const si = decoded.indexOf('###');
+        if (si < 0) continue;
+        driveId = decoded.substring(0, si);
+        itemId  = decoded.substring(si + 3);
+      } catch(e) { continue; }
+    } else { continue; }
+
+    // 파일 다운로드
+    const itemInfo = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}?select=id,name,@microsoft.graph.downloadUrl`,
+      { headers: { Authorization: 'Bearer ' + t } }
+    ).then(r => r.json());
+
+    const dlUrl = itemInfo['@microsoft.graph.downloadUrl'];
+    if (!dlUrl) continue;
+
+    const fileResp = await fetch(dlUrl);
+    const fileBlob = await fileResp.arrayBuffer();
+    const fileBytes = new Uint8Array(fileBlob);
+
+    // 5. SHA-256 해시 계산
+    const hashBuffer = await crypto.subtle.digest('SHA-256', fileBlob);
+    const hashArray  = Array.from(new Uint8Array(hashBuffer));
+    const hashHex    = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+
+    // 6. 파일 처리 (PDF 워터마크 or 그대로 저장)
+    let finalBytes = fileBytes;
+    const ext = origName.split('.').pop().toLowerCase();
+    let savedName = `[APPROVED_${approvedDate}]_Contract#${reqId}_${origName}`;
+
+    if (ext === 'pdf') {
+      // PDF 워터마크 삽입 (JavaScript로 직접)
+      try {
+        finalBytes = await addPdfWatermark(fileBlob, wmText, reqId, approvedDate);
+      } catch(e) {
+        console.warn('PDF 워터마크 실패, 원본 저장:', e);
+        finalBytes = fileBytes;
+      }
+    }
+    // Word/PPT/Excel 등은 원본 그대로 저장 + 파일명으로 승인 표시
+
+    // 7. Approved_Contracts 폴더에 저장
+    const uploadPath = `Approved_Contracts/${reqId}/${savedName}`;
+    const uploadResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${docDrive.id}/root:/${encodeURIComponent(uploadPath)}:/content`,
+      {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/octet-stream' },
+        body: finalBytes
+      }
+    );
+    const uploadedItem = uploadResp.ok ? await uploadResp.json() : null;
+    console.log('Approved_Contracts 저장 완료:', savedName);
+
+    // 8. 해시 + 승인 정보 SharePoint 리스트에 기록
+    try {
+      // ApprovalRecords 리스트에 기록 시도
+      await api('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', {
+        fields: {
+          Title: `Contract #${reqId} - ${origName}`,
+          RequestID: parseInt(reqId),
+          OriginalFileName: origName,
+          SavedFileName: savedName,
+          FileHash_SHA256: hashHex,
+          ApprovedDate: new Date().toISOString(),
+          RequesterEmail: f.RequesterEmail || '',
+          ContractTitle: f.Title || '',
+          ApprovedFolderPath: uploadedItem ? uploadedItem.webUrl : '',
+        }
+      });
+    } catch(e) {
+      console.warn('ApprovalRecords 기록 실패 (리스트 없을 수 있음):', e.message);
+    }
+  }
+
+  // 9. 신청자에게 완료 메일 (파일 링크 없이)
+  try {
+    const mailBody = `
+<div style="font-family:Segoe UI,sans-serif;max-width:600px;padding:24px">
+  <h2 style="color:#107c10">✅ Contract Approval Completed</h2>
+  <p>Dear ${f.RequesterEmail},</p>
+  <p>Your contract request has been <strong>fully approved</strong> by all approvers.</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
+    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600;width:160px">Contract #</td><td style="padding:8px;border-bottom:1px solid #edebe9">${reqId}</td></tr>
+    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Title</td><td style="padding:8px;border-bottom:1px solid #edebe9">${f.Title||'-'}</td></tr>
+    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Type</td><td style="padding:8px;border-bottom:1px solid #edebe9">${f.ContractCompanyType||'-'} / ${f.ContractType||'-'}</td></tr>
+    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Approved Date</td><td style="padding:8px;border-bottom:1px solid #edebe9">${approvedDate}</td></tr>
+    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Approved by</td><td style="padding:8px;border-bottom:1px solid #edebe9">STK Contract Checklist (All approvers)</td></tr>
+  </table>
+  <p style="color:#605e5c;font-size:13px">The approved contract document has been securely archived. Please contact <a href="mailto:hye-jin.yun@hyosung.com">hye-jin.yun@hyosung.com</a> if you need access to the approved file.</p>
+  <hr style="border:none;border-top:1px solid #edebe9;margin:20px 0">
+  <p style="color:#a19f9d;font-size:12px">This is an automated message from STK Contract Checklist System. Please do not reply.</p>
+</div>`;
+
+    await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          subject: `[STK Contract] ✅ Approval Completed - Contract #${reqId}: ${f.Title||''}`,
+          body: { contentType: 'HTML', content: mailBody },
+          toRecipients: [{ emailAddress: { address: f.RequesterEmail } }]
+        }
+      })
+    });
+    console.log('완료 메일 발송:', f.RequesterEmail);
+  } catch(e) { console.warn('메일 발송 실패:', e); }
+}
+
+// ── PDF 워터마크 삽입 (순수 JS, pdf-lib 없이 기본 구조 수정) ──
+async function addPdfWatermark(pdfArrayBuffer, wmText, reqId, approvedDate) {
+  // pdf-lib 라이브러리 동적 로드
+  if (!window.PDFLib) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  const { PDFDocument, rgb, degrees, StandardFonts } = window.PDFLib;
+  const pdfDoc = await PDFDocument.load(pdfArrayBuffer, { ignoreEncryption: true });
+  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const pages = pdfDoc.getPages();
+
+  for (const page of pages) {
+    const { width, height } = page.getSize();
+
+    // 대각선 대형 워터마크 (반투명)
+    page.drawText('APPROVED', {
+      x: width / 2 - 130,
+      y: height / 2 - 30,
+      size: 72,
+      font,
+      color: rgb(0.07, 0.49, 0.07),
+      opacity: 0.12,
+      rotate: degrees(35),
+    });
+
+    // 하단 정보 바
+    page.drawRectangle({
+      x: 0, y: 0, width, height: 28,
+      color: rgb(0.07, 0.49, 0.07),
+      opacity: 0.85,
+    });
+    page.drawText(wmText, {
+      x: 8, y: 8, size: 7.5, font,
+      color: rgb(1, 1, 1), opacity: 1,
+    });
+
+    // 우상단 날짜 스탬프
+    page.drawRectangle({
+      x: width - 155, y: height - 22, width: 150, height: 18,
+      color: rgb(0.07, 0.49, 0.07), opacity: 0.85,
+    });
+    page.drawText(`APPROVED ${approvedDate}`, {
+      x: width - 150, y: height - 15, size: 8, font,
+      color: rgb(1, 1, 1), opacity: 1,
+    });
+  }
+
+  return await pdfDoc.save();
 }
 
 // ── Admin List ──
