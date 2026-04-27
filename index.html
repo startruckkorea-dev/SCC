@@ -1215,9 +1215,9 @@ async function loadAdminList() {
     // ApprovalRecords에서 hash 맵 생성
     let hashMap = {};
     try {
-      const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?=fields&=500');
+      const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
       // Title 형식: "Contract #<SP_item_id> - <파일명>" 으로 저장됨
-      hashData.value.forEach(h => {
+      (hashData.value || []).forEach(h => {
         const title = h.fields.Title || '';
         // "Contract #123 - 파일명" 에서 123 추출
         const m = title.match(/Contract #(\d+)/);
