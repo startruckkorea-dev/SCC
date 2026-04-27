@@ -919,6 +919,7 @@ async function processApproval(apprId, action, reqId, comment='') {
       }
     }
     alert(action + ' 처리되었습니다.');
+    closeModal(); // 상세 모달 닫기
     await loadApprovalQueue();
     await checkApprovalBadge();
   } catch(e) { alert('오류: ' + e.message); }
