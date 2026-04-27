@@ -972,12 +972,11 @@ async function processApprovedContract(reqId) {
   let cleanFiles = f.AttachedFiles.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
   const fileEntries = cleanFiles.split(/[;\n]+/).filter(e => e.trim() && e.includes('||'));
 
-  // 3. AttachedFiles 드라이브 가져오기
+  // 3. AttachedFiles 드라이브 가져오기 (Approved_Contracts도 여기 있음)
   const drivesData = await api('/sites/' + siteId + '/drives');
   const attDrive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
-
-  // 4. Approved_Contracts 폴더 확인/생성 (문서 라이브러리)
-  const docDrive = drivesData.value.find(d => d.name === '문서') || drivesData.value.find(d => d.name === 'Documents') || drivesData.value[0];
+  const docDrive = attDrive; // Approved_Contracts가 AttachedFiles 라이브러리 안에 있음
+  console.log('AttachedFiles 드라이브:', attDrive.id, attDrive.name);
 
   // 파일별 처리
   for (const entry of fileEntries) {
@@ -1070,38 +1069,9 @@ async function processApprovedContract(reqId) {
     }
   }
 
-  // 9. 신청자에게 완료 메일 (파일 링크 없이)
-  try {
-    const mailBody = `
-<div style="font-family:Segoe UI,sans-serif;max-width:600px;padding:24px">
-  <h2 style="color:#107c10">✅ Contract Approval Completed</h2>
-  <p>Dear ${f.RequesterEmail},</p>
-  <p>Your contract request has been <strong>fully approved</strong> by all approvers.</p>
-  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
-    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600;width:160px">Contract #</td><td style="padding:8px;border-bottom:1px solid #edebe9">${reqId}</td></tr>
-    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Title</td><td style="padding:8px;border-bottom:1px solid #edebe9">${f.Title||'-'}</td></tr>
-    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Type</td><td style="padding:8px;border-bottom:1px solid #edebe9">${f.ContractCompanyType||'-'} / ${f.ContractType||'-'}</td></tr>
-    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Approved Date</td><td style="padding:8px;border-bottom:1px solid #edebe9">${approvedDate}</td></tr>
-    <tr><td style="padding:8px;background:#f3f2f1;font-weight:600">Approved by</td><td style="padding:8px;border-bottom:1px solid #edebe9">STK Contract Checklist (All approvers)</td></tr>
-  </table>
-  <p style="color:#605e5c;font-size:13px">The approved contract document has been securely archived. Please contact <a href="mailto:hye-jin.yun@hyosung.com">hye-jin.yun@hyosung.com</a> if you need access to the approved file.</p>
-  <hr style="border:none;border-top:1px solid #edebe9;margin:20px 0">
-  <p style="color:#a19f9d;font-size:12px">This is an automated message from STK Contract Checklist System. Please do not reply.</p>
-</div>`;
-
-    await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: {
-          subject: `[STK Contract] ✅ Approval Completed - Contract #${reqId}: ${f.Title||''}`,
-          body: { contentType: 'HTML', content: mailBody },
-          toRecipients: [{ emailAddress: { address: f.RequesterEmail || user.email || user.username } }]
-        }
-      })
-    });
-    console.log('완료 메일 발송:', f.RequesterEmail);
-  } catch(e) { console.warn('메일 발송 실패:', e); }
+  // 9. 완료 메일 → Power Automate Flow (Contract-Checklist_Email_Notification) 가 STK_Contracts Status='승인완료' 변경을 감지해서 자동 발송
+  // Flow의 '승인완료' 케이스에서 RequesterEmail로 완료 메일 발송됨
+  console.log('완료 메일: Power Automate Flow에 위임 (STK_Contracts Status=승인완료 트리거)');
 }
 
 // ── PDF 워터마크 삽입 (순수 JS, pdf-lib 없이 기본 구조 수정) ──
