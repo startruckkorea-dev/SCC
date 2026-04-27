@@ -577,7 +577,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>상태</th><th>신청일</th><th>처리</th>
         </tr></thead>
         <tbody id="appr-body">
-          <tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>
         </tbody>
       </table>
     </div>
@@ -596,10 +596,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       </div>
       <table class="list-table">
         <thead><tr>
-          <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th>
+          <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th><th>SHA-256 Hash</th>
         </tr></thead>
         <tbody id="admin-body">
-          <tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -1146,7 +1146,18 @@ async function loadAdminList() {
       (i.fields.Title||'').toLowerCase().includes(filterSearch)
     );
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
-    dynLoadEnd(); pgSet('admin', items, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
+    // ApprovalRecords에서 hash 맵 생성
+    let hashMap = {};
+    try {
+      const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?=fields&=500');
+      hashData.value.forEach(h => { hashMap[h.fields.RequestID] = h.fields.FileHash_SHA256 || ''; });
+    } catch(e) {}
+    dynLoadEnd(); pgSet('admin', items, item => {
+      const f = item.fields;
+      const hash = hashMap[item.id] || '';
+      const hashDisplay = hash ? '<span title="' + hash + '" style="font-family:monospace;font-size:.68rem;color:#605e5c;cursor:help">' + hash.substring(0,12) + '...</span>' : '<span style="color:#a19f9d;font-size:.75rem">-</span>';
+      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
+    }, '조회 결과가 없습니다.', 8);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
