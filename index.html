@@ -1088,7 +1088,8 @@ async function processApprovedContract(reqId) {
         }
       });
     } catch(e) {
-      console.warn('ApprovalRecords 기록 실패 (리스트 없을 수 있음):', e.message);
+      console.error('ApprovalRecords 기록 실패:', e.message);
+      // 실패해도 alert 없이 계속 진행 (파일 저장은 완료됨)
     }
   }
 
@@ -1215,16 +1216,21 @@ async function loadAdminList() {
     let hashMap = {};
     try {
       const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?=fields&=500');
-      // RequestID를 문자열/숫자 모두 키로 저장
+      // Title 형식: "Contract #<SP_item_id> - <파일명>" 으로 저장됨
       hashData.value.forEach(h => {
-        const rid = h.fields.RequestID;
-        hashMap[String(rid)] = h.fields.FileHash_SHA256 || '';
-        hashMap[Number(rid)] = h.fields.FileHash_SHA256 || '';
+        const title = h.fields.Title || '';
+        // "Contract #123 - 파일명" 에서 123 추출
+        const m = title.match(/Contract #(\d+)/);
+        if (m) {
+          hashMap[m[1]] = h.fields.FileHash_SHA256 || '';
+        }
+        // RequestID로도 저장 (fallback)
+        if (h.fields.RequestID) hashMap[String(h.fields.RequestID)] = h.fields.FileHash_SHA256 || '';
       });
     } catch(e) { console.warn('Hash 조회 실패:', e); }
     dynLoadEnd(); pgSet('admin', items, item => {
       const f = item.fields;
-      const hash = hashMap[String(item.id)] || hashMap[Number(item.id)] || '';
+      const hash = hashMap[String(item.id)] || '';
       const hashDisplay = hash ? '<span title="' + hash + '" style="font-family:monospace;font-size:.68rem;color:#605e5c;cursor:help">' + hash.substring(0,12) + '...</span>' : '<span style="color:#a19f9d;font-size:.75rem">-</span>';
       return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
     }, '조회 결과가 없습니다.', 8);
