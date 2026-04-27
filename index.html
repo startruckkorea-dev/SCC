@@ -385,30 +385,30 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">3. Contract Template</div>
       <div class="tmpl-block">
-        <label class="tmpl-main"><input type="checkbox"> Standard template</label>
-        <div class="sub-list">
+        <label class="tmpl-main"><input type="checkbox" id="chk-standard" onchange="onTmplChange(this)"> Standard template</label>
+        <div class="sub-list" id="sub-standard" style="opacity:.4;pointer-events:none;">
           <div class="two-col">
-            <label><input type="checkbox"> - Dealership / Service Center Agreement</label>
-            <label><input type="checkbox"> - Service Level Agreement with Other Mercedes-Benz Entity</label>
-            <label><input type="checkbox"> - (STK) Bodybuilder Framework Agreement</label>
+            <label><input type="checkbox" class="sub-standard"> - Dealership / Service Center Agreement</label>
+            <label><input type="checkbox" class="sub-standard"> - Service Level Agreement with Other Mercedes-Benz Entity</label>
+            <label><input type="checkbox" class="sub-standard"> - (STK) Bodybuilder Framework Agreement</label>
           </div>
           <label style="align-items:center;flex-wrap:wrap;gap:4px;">
-            <input type="checkbox">- Other standard template ( title:&nbsp;<input type="text" class="tmpl-text">&nbsp;)
+            <input type="checkbox" class="sub-standard">- Other standard template ( title:&nbsp;<input type="text" class="tmpl-text" id="tmpl-other-text" disabled>&nbsp;)
           </label>
         </div>
       </div>
       <div class="tmpl-block">
-        <label class="tmpl-main"><input type="checkbox"> Non-Standard template</label>
-        <div class="sub-list">
+        <label class="tmpl-main"><input type="checkbox" id="chk-nonstandard" onchange="onTmplChange(this)"> Non-Standard template</label>
+        <div class="sub-list" id="sub-nonstandard" style="opacity:.4;pointer-events:none;">
           <div class="two-col">
-            <label><input type="checkbox"> - Legal's review was complete</label>
-            <label><input type="checkbox"> - Soft copy was emailed to Legal</label>
-            <label><input type="checkbox"> - Contract was drafted by Legal</label>
+            <label><input type="checkbox" class="sub-nonstandard"> - Legal's review was complete</label>
+            <label><input type="checkbox" class="sub-nonstandard"> - Soft copy was emailed to Legal</label>
+            <label><input type="checkbox" class="sub-nonstandard"> - Contract was drafted by Legal</label>
           </div>
         </div>
       </div>
       <div class="tmpl-block">
-        <label class="tmpl-main"><input type="checkbox"> Government template</label>
+        <label class="tmpl-main"><input type="checkbox" id="chk-government"> Government template</label>
       </div>
 
       <div class="section-title">4. Compliance / Final Check</div>
@@ -1452,6 +1452,73 @@ function updateApproverBlocks() {
     if (rdT)  rdT.innerHTML  = rdO  + '차 결재자 <span class="hint">— RD (최종)</span>';
   }
 }
+// ── Contract Template 상호 배타 + 하위항목 잠금 ──
+function onTmplChange(chk) {
+  const isStd = chk.id === 'chk-standard';
+  const isNon = chk.id === 'chk-nonstandard';
+
+  if (isStd && chk.checked) {
+    // Standard 선택 시 Non-Standard 해제 + 하위 초기화
+    const nonChk = document.getElementById('chk-nonstandard');
+    nonChk.checked = false;
+    setSubEnabled('sub-nonstandard', false);
+    document.querySelectorAll('.sub-nonstandard').forEach(i => i.checked = false);
+  }
+  if (isNon && chk.checked) {
+    // Non-Standard 선택 시 Standard 해제 + 하위 초기화
+    const stdChk = document.getElementById('chk-standard');
+    stdChk.checked = false;
+    setSubEnabled('sub-standard', false);
+    document.querySelectorAll('.sub-standard').forEach(i => i.checked = false);
+    const otherText = document.getElementById('tmpl-other-text');
+    if (otherText) { otherText.value = ''; otherText.disabled = true; }
+  }
+
+  // 자신의 하위항목 활성/비활성
+  if (isStd) setSubEnabled('sub-standard', chk.checked);
+  if (isNon) setSubEnabled('sub-nonstandard', chk.checked);
+
+  // 체크 해제 시 하위항목 초기화
+  if (!chk.checked) {
+    const subId = isStd ? 'sub-standard' : 'sub-nonstandard';
+    const cls   = isStd ? '.sub-standard'  : '.sub-nonstandard';
+    document.querySelectorAll(cls).forEach(i => i.checked = false);
+    if (isStd) {
+      const otherText = document.getElementById('tmpl-other-text');
+      if (otherText) { otherText.value = ''; otherText.disabled = true; }
+    }
+  }
+
+  // Other standard template 텍스트박스: 체크박스 연동
+  const otherCb = document.querySelector('#sub-standard .sub-standard:last-of-type');
+  const otherTxt = document.getElementById('tmpl-other-text');
+  if (otherCb && otherTxt) {
+    otherCb.addEventListener('change', () => { otherTxt.disabled = !otherCb.checked; });
+  }
+}
+
+function setSubEnabled(subId, enabled) {
+  const el = document.getElementById(subId);
+  if (!el) return;
+  el.style.opacity   = enabled ? '1' : '.4';
+  el.style.pointerEvents = enabled ? '' : 'none';
+}
+
+// Other standard template 텍스트박스 체크박스 연동 (페이지 로드 시)
+document.addEventListener('DOMContentLoaded', () => {
+  // Other 체크박스 → 텍스트박스 활성화
+  document.querySelectorAll('#sub-standard .sub-standard').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const otherTxt = document.getElementById('tmpl-other-text');
+      if (!otherTxt) return;
+      // Other 체크박스는 마지막 label의 input
+      const allSub = document.querySelectorAll('#sub-standard .sub-standard');
+      const otherCb = allSub[allSub.length - 1];
+      otherTxt.disabled = !otherCb.checked;
+    });
+  });
+});
+
 function checkFileSize(input) {
   if (!input.files[0]) return;
   const mb = input.files[0].size / 1024 / 1024;
