@@ -908,27 +908,20 @@ async function processApproval(apprId, action, reqId, comment='') {
       // 현재 reqId의 모든 결재자 조회
       const all = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
       const thisReq = all.value.filter(i => Number(i.fields.RequestID) === Number(reqId));
-      
+
       // 다음 잠긴 결재자 (대기(잠김)) → 활성화
       const locked = thisReq
         .filter(i => (i.fields.Status||'').trim() === '대기(잠김)')
         .sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
-      
-      // 본인 제외하고 아직 미처리(대기 or 대기(잠김))인 결재자
-      const remaining = thisReq.filter(i =>
-        String(i.id) !== String(apprId) &&
-        ['대기','대기(잠김)'].includes((i.fields.Status||'').trim())
-      );
 
       if (locked.length) {
-        // 다음 잠긴 결재자 활성화
+        // 다음 잠긴 결재자 활성화 → 아직 결재 남아있음
         await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + locked[0].id, 'PATCH', { fields: { Status: '대기' } });
         console.log('다음 결재자 활성화:', locked[0].fields.ApprovalOrder, '차');
-      }
-      
-      if (remaining.length === 0) {
-        // 모든 결재자 처리 완료 → 승인완료 + 후처리
-        console.log('✅ 모든 결재 완료 → 승인완료 처리');
+      } else {
+        // 잠긴 결재자 없음 = 본인이 마지막 결재자 → 승인완료 + 후처리
+        // (본인 PATCH는 위에서 이미 완료됨)
+        console.log('✅ 모든 결재 완료 → 승인완료 처리 (총', thisReq.length, '명 중 마지막)');
         await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
         // ── 최종 승인 완료: 워터마크 + 해시 + Approved_Contracts 보관 ──
         try {
