@@ -594,6 +594,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <input type="text" id="admin-filter-search" oninput="loadAdminList()" placeholder="신청자 / 제목 검색...">
         <span id="admin-count" style="font-size:13px;color:#605e5c;margin-left:auto"></span>
       </div>
+      <!-- 파일 변조 검증 도구 -->
+      <div style="background:#f0f6ff;border:1px solid #c7e0f4;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:.8rem;font-weight:700;color:#1F4E79;white-space:nowrap">🔍 파일 무결성 검증</span>
+        <input type="file" id="verify-file-input" style="font-size:.78rem;flex:1;min-width:200px">
+        <button onclick="verifyFileHash()" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">Hash 검증</button>
+        <div id="verify-result" style="font-size:.78rem;font-weight:600;width:100%;display:none"></div>
+      </div>
       <table class="list-table">
         <thead><tr>
           <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th><th>SHA-256 Hash</th>
@@ -1128,6 +1135,64 @@ async function addPdfWatermark(pdfArrayBuffer, wmText, reqId, approvedDate) {
 }
 
 // ── Admin List ──
+async function verifyFileHash() {
+  const input = document.getElementById('verify-file-input');
+  const resultEl = document.getElementById('verify-result');
+  if (!input.files[0]) { alert('파일을 선택해주세요.'); return; }
+  
+  const file = input.files[0];
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '⏳ Hash 계산 중...';
+  resultEl.style.color = '#605e5c';
+
+  try {
+    // 1. 파일 SHA-256 계산
+    const buf = await file.arrayBuffer();
+    const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+    const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    
+    // 2. ApprovalRecords에서 파일명으로 검색
+    const fileName = file.name;
+    const records = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
+    
+    // 파일명 매칭 (원본 파일명 또는 저장 파일명)
+    const matched = records.value.find(r =>
+      (r.fields.SavedFileName || '').includes(fileName.replace(/^\[APPROVED_[^\]]+\]_/, '')) ||
+      (r.fields.OriginalFileName || '') === fileName ||
+      (r.fields.SavedFileName || '') === fileName
+    );
+
+    if (!matched) {
+      // 해시값으로 직접 검색
+      const hashMatched = records.value.find(r => r.fields.FileHash_SHA256 === hashHex);
+      if (hashMatched) {
+        resultEl.innerHTML = '✅ 무결성 확인 완료 — 파일이 변조되지 않았습니다.<br>' +
+          '<span style="font-weight:400;color:#107c10">Contract #' + hashMatched.fields.RequestID + ' · ' + hashMatched.fields.ContractTitle + ' · 승인일: ' + (hashMatched.fields.ApprovedDate||'').substring(0,10) + '</span>';
+        resultEl.style.color = '#107c10';
+      } else {
+        resultEl.innerHTML = '⚠️ 등록된 승인 파일에서 일치하는 항목을 찾을 수 없습니다.<br>' +
+          '<span style="font-weight:400;color:#605e5c">계산된 Hash: ' + hashHex.substring(0,24) + '...</span>';
+        resultEl.style.color = '#b45309';
+      }
+      return;
+    }
+
+    const savedHash = matched.fields.FileHash_SHA256 || '';
+    if (hashHex === savedHash) {
+      resultEl.innerHTML = '✅ 무결성 확인 완료 — 파일이 변조되지 않았습니다.<br>' +
+        '<span style="font-weight:400;color:#107c10">Contract #' + matched.fields.RequestID + ' · ' + matched.fields.ContractTitle + ' · 승인일: ' + (matched.fields.ApprovedDate||'').substring(0,10) + '</span>';
+      resultEl.style.color = '#107c10';
+    } else {
+      resultEl.innerHTML = '❌ 경고: 파일이 변조되었습니다!<br>' +
+        '<span style="font-weight:400">원본 Hash: ' + savedHash.substring(0,24) + '...<br>현재 Hash: ' + hashHex.substring(0,24) + '...</span>';
+      resultEl.style.color = '#a4262c';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '오류: ' + e.message;
+    resultEl.style.color = '#a4262c';
+  }
+}
+
 async function loadAdminList() {
   if (!siteId) return;
   const tbody = document.getElementById('admin-body');
