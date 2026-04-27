@@ -938,8 +938,7 @@ async function processApprovedContract(reqId) {
   if (!f.AttachedFiles) { console.log('첨부파일 없음 - 스킵'); return; }
 
   let cleanFiles = f.AttachedFiles.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
-  const fileEntries = cleanFiles.split(/[;
-]+/).filter(e => e.trim() && e.includes('||'));
+  const fileEntries = cleanFiles.split(/[;\n]+/).filter(e => e.trim() && e.includes('||'));
 
   // 3. AttachedFiles 드라이브 가져오기
   const drivesData = await api('/sites/' + siteId + '/drives');
