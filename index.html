@@ -1215,11 +1215,16 @@ async function loadAdminList() {
     let hashMap = {};
     try {
       const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?=fields&=500');
-      hashData.value.forEach(h => { hashMap[h.fields.RequestID] = h.fields.FileHash_SHA256 || ''; });
-    } catch(e) {}
+      // RequestID를 문자열/숫자 모두 키로 저장
+      hashData.value.forEach(h => {
+        const rid = h.fields.RequestID;
+        hashMap[String(rid)] = h.fields.FileHash_SHA256 || '';
+        hashMap[Number(rid)] = h.fields.FileHash_SHA256 || '';
+      });
+    } catch(e) { console.warn('Hash 조회 실패:', e); }
     dynLoadEnd(); pgSet('admin', items, item => {
       const f = item.fields;
-      const hash = hashMap[item.id] || '';
+      const hash = hashMap[String(item.id)] || hashMap[Number(item.id)] || '';
       const hashDisplay = hash ? '<span title="' + hash + '" style="font-family:monospace;font-size:.68rem;color:#605e5c;cursor:help">' + hash.substring(0,12) + '...</span>' : '<span style="color:#a19f9d;font-size:.75rem">-</span>';
       return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
     }, '조회 결과가 없습니다.', 8);
