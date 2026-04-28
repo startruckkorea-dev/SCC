@@ -850,6 +850,8 @@ let _pendingApproval = null;
 function showConfirm(apprId, action, reqId) {
   _pendingApproval = { apprId, action, reqId };
   const isReject = action === '반려';
+  const detailModal = document.getElementById('detail-modal');
+  window._detailModalWasOpen = detailModal && detailModal.style.display === 'flex';
   document.getElementById('confirm-title').textContent = isReject ? '❌ 반려 확인' : '✅ 승인 확인';
   document.getElementById('confirm-sub').textContent = isReject
     ? '반려 사유를 입력해주세요. (필수)' : '이 신청을 승인하시겠습니까?';
@@ -866,13 +868,18 @@ function showConfirm(apprId, action, reqId) {
 function closeConfirm() {
   document.getElementById('confirm-modal').style.display = 'none';
   _pendingApproval = null;
+  if (window._detailModalWasOpen) {
+    document.getElementById('detail-modal').style.display = 'flex';
+  }
 }
 async function confirmApproval() {
   if (!_pendingApproval) return;
   const { apprId, action, reqId } = _pendingApproval;
   const comment = document.getElementById('confirm-comment').value.trim();
   if (action === '반려' && !comment) { alert('반려 사유를 입력해주세요.'); return; }
+  window._detailModalWasOpen = false;
   closeConfirm();
+  document.getElementById('detail-modal').style.display = 'none';
   await processApproval(apprId, action, reqId, comment);
   // 통합결재함이 열려있으면 목록 새로고침
   const uniModal = document.getElementById('unified-modal');
@@ -2122,5 +2129,18 @@ async function uniConfirmApproval() {
     <span style="font-size:.82rem;color:#475569">처리 중...</span>
   </div>
 </div>
+<!-- Confirm Modal -->
+<div id="confirm-modal" onclick="event.stopPropagation()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;padding:28px 28px 20px;max-width:420px;width:92%;box-shadow:0 4px 24px rgba(0,0,0,.2)">
+    <div id="confirm-title" style="font-size:1rem;font-weight:700;color:#323130;margin-bottom:6px"></div>
+    <div id="confirm-sub" style="font-size:.78rem;color:#605e5c;margin-bottom:14px"></div>
+    <textarea id="confirm-comment" rows="3" style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:8px 10px;font-size:.82rem;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="closeConfirm()" style="background:#fff;border:1px solid #d2d0ce;border-radius:4px;padding:7px 20px;font-size:.85rem;cursor:pointer;font-family:inherit">취소</button>
+      <button id="confirm-ok-btn" style="border:none;border-radius:4px;padding:7px 20px;font-size:.85rem;cursor:pointer;font-weight:600;font-family:inherit"></button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
