@@ -2105,6 +2105,15 @@ async function uniConfirmApproval() {
 
 </script>
 
+<!-- Detail Modal -->
+<div id="detail-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title">신청 상세 내용</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
 <!-- Loading -->
 <div id="loading" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.75);align-items:center;justify-content:center;z-index:999">
   <div style="background:#fff;border-radius:12px;padding:24px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.12)">
