@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -271,7 +271,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 </head>
 <body>
 
-<!-- ── Login ── -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">📄</div>
@@ -279,6 +278,357 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
     <div class="login-co">STK Korea 계약서 결재 시스템</div>
     <button class="btn-login" id="btn-login" onclick="signIn()" disabled>로딩 중...</button>
     <div id="login-err"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="title">STK Contract Checklist</div>
+      <div class="subtitle">관련 문의 Email: hye-jin.yun@hyosung.com</div>
+    </div>
+    <div class="user-info" style="flex-direction:column;align-items:flex-end;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="user-name"></span>
+        <button id="btn-logout" onclick="signOut()">로그아웃</button>
+      </div>
+      <a href="https://aps.startruckkorea.com/" target="_blank" title="STK 통합 결재함" style="text-decoration:none;display:inline-flex;align-items:center;gap:7px;background:#0078d4;color:#fff;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:600;font-family:'Segoe UI',sans-serif;letter-spacing:-.2px;box-shadow:0 1px 4px rgba(0,120,212,.25);transition:background .15s" onmouseover="this.style.background='#106ebe'" onmouseout="this.style.background='#0078d4'"><span style="font-size:1rem;line-height:1">📬</span><span>통합 결재함</span></a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-form-btn" onclick="switchTab('form')">신청서 작성</button>
+    <button class="tab" id="tab-list-btn"     onclick="switchTab('list')">내 신청 목록</button>
+    <button class="tab" id="tab-approval-btn" onclick="switchTab('approval')">결재함 <span id="appr-badge" class="tab-badge"></span></button>
+    <button class="tab" id="tab-admin-btn"    onclick="switchTab('admin')" style="display:none">관리자</button>
+  </div>
+
+  <!-- ── 신청서 작성 ── -->
+  <div id="tab-form">
+    <div class="card">
+      <div class="card-title">계약 체크리스트 (Contract Checklist)</div>
+
+      <div class="section-title">1. 기본 정보 (Basic Information)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company <span class="req">*</span></label>
+          <select id="company"><option value="STK">STK</option></select>
+        </div>
+        <div class="form-group">
+          <label>Type <span class="req">*</span></label>
+          <select id="sel-type" onchange="updateApproverBlocks()">
+            <option value="">-- Choice Type --</option>
+            <option>Sales</option><option>Non-Sales</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Title of Contract <span class="req">*</span></label>
+          <input type="text" id="f-title">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Contract Partner <span class="req">*</span></label>
+          <input type="text" id="f-partner">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Objective of Contract <span class="req">*</span></label>
+          <input type="text" id="f-objective">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contract Value <span class="req">*</span></label>
+          <div class="inline-row">
+            <input type="number" id="f-value" placeholder="0" min="0">
+            <select id="f-currency">
+              <option value="">-- Currency --</option>
+              <option>USD</option><option>EUR</option><option>KRW</option><option>SGD</option><option>etc</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Contract Type <span class="req">*</span></label>
+          <select id="f-ctype">
+            <option value="">-- Choice Contract Type --</option>
+            <option>New</option>
+            <option>Contract Term Extension</option>
+            <option>Amendment or Supplementary Agreement</option>
+            <option>Copy of Original Agreement Attached</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Contract Period <span class="req">*</span></label>
+        <div class="period-checks">
+          <label><input type="checkbox" id="chk-lim"   onchange="onPeriod()"> Limited duration</label>
+          <label><input type="checkbox" id="chk-auto"  onchange="onPeriod()"> Auto-renewal</label>
+          <label><input type="checkbox" id="chk-noend" onchange="onPeriod()"> No end date</label>
+        </div>
+        <div class="period-dates">
+          <span>start:</span><input type="date" id="p-start">
+          <span>end:</span><input type="date" id="p-end">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Payment Term</label>
+        <div class="pay-inline">Within <input type="number" id="f-paydays" min="0"> days from invoice date</div>
+      </div>
+
+      <div class="section-title">2. 계약서류 (Contract Documents)</div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Contract document <span class="req">*</span></label>
+        <div style="background:#fff4ce;border:1px solid #f0d060;border-radius:6px;padding:9px 14px;margin-bottom:8px;font-size:.75rem;color:#7d5700;line-height:1.7">
+          📄 <b>PDF 파일만 업로드 가능합니다.</b><br>
+          Word(.docx) · HWP 등 다른 형식의 계약서는 <b>PDF로 변환</b> 후 업로드해 주세요.<br>
+          <span style="color:#605e5c">변환 방법: Word → 파일 → PDF로 저장 / HWP → 파일 → PDF로 저장</span>
+        </div>
+        <div class="file-group">
+          <div class="file-row"><input type="file" id="f-doc" accept=".pdf,application/pdf" onchange="checkPdfFile(this)"><button class="btn-file-reset" onclick="rf('f-doc')">Reset</button></div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Attachment</label>
+        <div class="file-group">
+          <div class="file-row"><input type="file" id="att1" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att1')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att2" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att2')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att3" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att3')">Reset</button></div>
+          <div class="file-row"><input type="file" id="att4" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att4')">Reset</button></div>
+          <div style="font-size:11px;color:#605e5c;margin-top:4px">※ 파일 1개당 최대 20MB / 전체 합계 최대 20MB</div>
+        </div>
+      </div>
+
+      <div class="section-title">3. Contract Template</div>
+      <div class="tmpl-block">
+        <label class="tmpl-main"><input type="checkbox" id="chk-standard" onchange="onTmplChange(this)"> Standard template</label>
+        <div class="sub-list" id="sub-standard" style="opacity:.4;pointer-events:none;">
+          <div class="two-col">
+            <label><input type="checkbox" class="sub-standard"> - Dealership / Service Center Agreement</label>
+            <label><input type="checkbox" class="sub-standard"> - Service Level Agreement with Other Mercedes-Benz Entity</label>
+            <label><input type="checkbox" class="sub-standard"> - (STK) Bodybuilder Framework Agreement</label>
+          </div>
+          <label style="align-items:center;flex-wrap:wrap;gap:4px;">
+            <input type="checkbox" class="sub-standard">- Other standard template ( title:&nbsp;<input type="text" class="tmpl-text" id="tmpl-other-text" disabled>&nbsp;)
+          </label>
+        </div>
+      </div>
+      <div class="tmpl-block">
+        <label class="tmpl-main"><input type="checkbox" id="chk-nonstandard" onchange="onTmplChange(this)"> Non-Standard template</label>
+        <div class="sub-list" id="sub-nonstandard" style="opacity:.4;pointer-events:none;">
+          <div class="two-col">
+            <label><input type="checkbox" class="sub-nonstandard"> - Legal's review was complete</label>
+            <label><input type="checkbox" class="sub-nonstandard"> - Soft copy was emailed to Legal</label>
+            <label><input type="checkbox" class="sub-nonstandard"> - Contract was drafted by Legal</label>
+          </div>
+        </div>
+      </div>
+      <div class="tmpl-block">
+        <label class="tmpl-main"><input type="checkbox" id="chk-government"> Government template</label>
+      </div>
+
+      <div class="section-title">4. Compliance / Final Check</div>
+      <div class="comp-row">
+        <div class="comp-label">Business / commercial terms was reviewed</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="biz" value="yes"> YES</label>
+          <label><input type="radio" name="biz" value="no"> NO</label>
+        </div>
+      </div>
+      <div class="comp-header">Compliance-related Assessment</div>
+      <div class="comp-row">
+        <div class="comp-label">Is Compliance Due Diligence performed?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="dd" value="yes" onchange="onDD(this)"> YES &nbsp;( DD ID: <input type="text" class="extra-inp" id="dd-id" disabled> )</label>
+          <label><input type="radio" name="dd" value="no"  onchange="onDD(this)"> NO &nbsp;( <input type="text" class="extra-inp" id="dd-no" disabled> )</label>
+        </div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-label">Is personal Information(개인정보) of customers or employees provided/disclosed to Contract Party or 3rd Party?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="personal" value="yes" onchange="onPersonal(this)"> YES</label>
+          <label><input type="radio" name="personal" value="no"  onchange="onPersonal(this)"> NO</label>
+        </div>
+      </div>
+      <div class="sub-row" id="std-row">
+        <div class="comp-label sub">- is this Standard contract?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="stdcon" value="yes"> YES</label>
+          <label><input type="radio" name="stdcon" value="no"> NO &nbsp;( <input type="text" class="extra-inp" id="stdcon-no"> )</label>
+        </div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-label">Signing Party Designation is in compliance with SMR?</div>
+        <div class="comp-opts">
+          <label><input type="radio" name="smr" value="yes"> YES</label>
+          <label><input type="radio" name="smr" value="no"> NO</label>
+        </div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-label">Final signing off?</div>
+        <div class="comp-opts sign-opts">
+          <label><input type="checkbox" value="authorized person's signatures" onchange="updateCFO_CEO()"> authorized person's signatures</label>
+          <label><input type="checkbox" value="signatures and corporate chop" onchange="updateCFO_CEO()"> signatures and corporate chop</label>
+          <label><input type="checkbox" value="chop only" onchange="updateCFO_CEO()"> chop only</label>
+        </div>
+      </div>
+
+      <div class="section-title">5. 결재자 지정 (Approvers)</div>
+      <div style="font-size:11px;color:#605e5c;background:#f9f8f7;border:1px solid #edebe9;border-radius:4px;padding:8px 12px;margin-bottom:12px;line-height:1.8">
+        <b>결재 라인 구성 기준</b><br>
+        1차 RBO Director · 2차 Legal Director · 3차 Compliance Director <span style="color:#0078d4">(기본 고정)</span><br>
+        <b style="color:#0078d4">Type = Sales</b> 인 경우: 4차 Controlling 팀장 (Contract Checklist) 추가<br>
+        5차 Accounting Director · <b>Final signing off에서 "corporate chop" 또는 "chop only" 선택 시</b>: 6차 CFO · 7차 CEO 자동 추가<br>
+        <b style="color:#a4262c">최종 결재자: RD</b>
+      </div>
+
+      <!-- 1차: Line Manager (선택) -->
+      <div class="appr-block">
+        <div class="appr-title">1차 결재자 <span class="req-mark">*</span> <span class="hint">— Line Manager (팀장)</span></div>
+        <div class="appr-grid">
+          <select id="a1-dept"   onchange="onDeptChange(1)"><option value="">부서</option></select>
+          <select id="a1-team"   onchange="onTeamChange(1)" disabled><option value="">팀</option></select>
+          <select id="a1-person" onchange="onPersonChange(1)" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="appr-info">
+          <input type="text"  id="a1-name"  readonly placeholder="이름">
+          <input type="email" id="a1-email" readonly placeholder="이메일">
+        </div>
+      </div>
+
+      <!-- 2차: 부서장 (선택) -->
+      <div class="appr-block">
+        <div class="appr-title">2차 결재자 <span class="hint">— Department Head (부서장)</span></div>
+        <div class="appr-grid">
+          <select id="a2-dept"   onchange="onDeptChange(2)"><option value="">부서</option></select>
+          <select id="a2-team"   onchange="onTeamChange(2)" disabled><option value="">팀</option></select>
+          <select id="a2-person" onchange="onPersonChange(2)" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="appr-info">
+          <input type="text"  id="a2-name"  readonly placeholder="이름">
+          <input type="email" id="a2-email" readonly placeholder="이메일">
+        </div>
+      </div>
+
+      <!-- 3차: Legal & Compliance — 고정 -->
+      <div class="appr-block">
+        <div class="appr-title">3차 결재자 <span class="hint">— Legal &amp; Compliance (자동 지정)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- 4차: Jungho Yoo — Sales 전용 조건부 -->
+      <div class="appr-block" id="appr-block-jungho" style="display:none;border:1px solid #bfdbfe;background:#eff6ff">
+        <div class="appr-title" style="color:#1d4ed8">4차 결재자 <span class="hint">— Controlling 팀장 (Sales Type 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- Accounting: Sales면 5차, Non-Sales면 4차 -->
+      <div class="appr-block" id="appr-block-acct">
+        <div class="appr-title" id="appr-acct-title">4차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- CFO — 조건부 (Final signing off: corporate chop / chop only) -->
+      <div class="appr-block" id="appr-block-5" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
+        <div class="appr-title" style="color:#b45309" id="appr-cfo-title">5차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- CEO — 조건부 -->
+      <div class="appr-block" id="appr-block-6" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
+        <div class="appr-title" style="color:#b45309" id="appr-ceo-title">6차 결재자 <span class="hint">— CEO (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <!-- 최종: RD — chop 조건 시에만 표시 -->
+      <div class="appr-block" id="appr-block-rd" style="display:none;border:1px solid #fecaca;background:#fff5f5">
+        <div class="appr-title" style="color:#b91c1c" id="appr-rd-title">최종 결재자 <span class="hint">— RD (Final signing off 조건 충족 시 자동 추가)</span></div>
+        <div class="appr-info">
+          <input type="text"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="resetForm()">초기화</button>
+        <button class="btn-primary"   onclick="submitForm()">제출</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 내 신청 목록 ── -->
+  <div id="tab-list" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th>
+        </tr></thead>
+        <tbody id="list-body">
+          <tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 결재함 ── -->
+  <div id="tab-approval" style="display:none">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>상태</th><th>신청일</th><th>처리</th>
+        </tr></thead>
+        <tbody id="appr-body">
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 관리자 ── -->
+  <div id="tab-admin" style="display:none">
+    <div class="card">
+      <div class="filter-bar">
+        <select id="admin-filter-status" onchange="loadAdminList()">
+          <option value="">전체 상태</option>
+          <option>대기</option><option>처리중</option><option>승인완료</option><option>반려</option>
+        </select>
+        <input type="text" id="admin-filter-search" oninput="loadAdminList()" placeholder="신청자 / 제목 검색...">
+        <span id="admin-count" style="font-size:13px;color:#605e5c;margin-left:auto"></span>
+      </div>
+      <!-- 파일 변조 검증 도구 -->
+      <div style="background:#f0f6ff;border:1px solid #c7e0f4;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:.8rem;font-weight:700;color:#1F4E79;white-space:nowrap">🔍 파일 무결성 검증</span>
+        <input type="file" id="verify-file-input" style="font-size:.78rem;flex:1;min-width:200px">
+        <button onclick="verifyFileHash()" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">Hash 검증</button>
+        <div id="verify-result" style="font-size:.78rem;font-weight:600;width:100%;display:none"></div>
+      </div>
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>신청자</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th><th>SHA-256 Hash</th>
+        </tr></thead>
+        <tbody id="admin-body">
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
