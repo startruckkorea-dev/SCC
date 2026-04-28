@@ -1027,13 +1027,10 @@ async function processApprovedContract(reqId) {
       }
     }
 
-    // 5. SHA-256 해시 계산 (워터마크 삽입 후 최종 파일 기준)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', finalBytes);
-    const hashArray  = Array.from(new Uint8Array(hashBuffer));
-    const hashHex    = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
-    // Word/PPT/Excel 등은 원본 그대로 저장 + 파일명으로 승인 표시
+    // 5. SHA-256 해시 계산은 업로드 후 SharePoint에서 다시 다운받아 계산 (변형 방지)
+    let hashHex = '';
 
-    // 7. Approved_Contracts 폴더에 저장 (각 경로 세그먼트만 인코딩)
+    // 7. Approved_Contracts 폴더에 저장
     const uploadPath = `Approved_Contracts/${reqId}/${encodeURIComponent(savedName)}`;
     console.log('업로드 시도:', uploadPath);
     const uploadResp = await fetch(
@@ -1050,6 +1047,31 @@ async function processApprovedContract(reqId) {
     }
     const uploadedItem = uploadResp.ok ? await uploadResp.json() : null;
     console.log('Approved_Contracts 저장 완료:', savedName, uploadedItem?.webUrl);
+
+    // 5. 업로드된 파일을 SharePoint에서 다시 다운받아 SHA-256 계산 (저장된 실제 파일 기준)
+    if (uploadedItem) {
+      try {
+        const dlRes = await fetch(
+          `https://graph.microsoft.com/v1.0/drives/${docDrive.id}/items/${uploadedItem.id}/content`,
+          { headers: { Authorization: 'Bearer ' + t } }
+        );
+        if (dlRes.ok) {
+          const dlBuf = await dlRes.arrayBuffer();
+          const hBuf = await crypto.subtle.digest('SHA-256', dlBuf);
+          hashHex = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+          console.log('Hash 계산 완료 (SharePoint 기준):', hashHex.substring(0, 16) + '...');
+        }
+      } catch(e) {
+        console.warn('Hash 재계산 실패, 로컬 계산값 사용:', e);
+        // fallback: 로컬 bytes 기준
+        const hBuf = await crypto.subtle.digest('SHA-256', finalBytes);
+        hashHex = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+      }
+    } else {
+      // 업로드 실패 시 로컬 bytes 기준
+      const hBuf = await crypto.subtle.digest('SHA-256', finalBytes);
+      hashHex = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
 
     // 8. 해시 + 승인 정보 SharePoint 리스트에 기록
     try {
