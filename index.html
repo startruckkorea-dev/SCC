@@ -851,7 +851,7 @@ function showConfirm(apprId, action, reqId) {
   _pendingApproval = { apprId, action, reqId };
   const isReject = action === '반려';
   const detailModal = document.getElementById('detail-modal');
-  window._detailModalWasOpen = detailModal && detailModal.style.display === 'flex';
+  window._detailModalWasOpen = detailModal && detailModal.classList.contains('show');
   document.getElementById('confirm-title').textContent = isReject ? '❌ 반려 확인' : '✅ 승인 확인';
   document.getElementById('confirm-sub').textContent = isReject
     ? '반려 사유를 입력해주세요. (필수)' : '이 신청을 승인하시겠습니까?';
@@ -869,7 +869,7 @@ function closeConfirm() {
   document.getElementById('confirm-modal').style.display = 'none';
   _pendingApproval = null;
   if (window._detailModalWasOpen) {
-    document.getElementById('detail-modal').style.display = 'flex';
+    document.getElementById('detail-modal').classList.add('show');
   }
 }
 async function confirmApproval() {
@@ -879,7 +879,7 @@ async function confirmApproval() {
   if (action === '반려' && !comment) { alert('반려 사유를 입력해주세요.'); return; }
   window._detailModalWasOpen = false;
   closeConfirm();
-  document.getElementById('detail-modal').style.display = 'none';
+  document.getElementById('detail-modal').classList.remove('show');
   await processApproval(apprId, action, reqId, comment);
   // 통합결재함이 열려있으면 목록 새로고침
   const uniModal = document.getElementById('unified-modal');
