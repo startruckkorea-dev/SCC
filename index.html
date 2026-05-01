@@ -1640,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkFileSize(input) {
   if (!input.files[0]) return;
   const mb = input.files[0].size / 1024 / 1024;
-  if (mb > 20) {
+  if (mb > 80) {
     alert(input.files[0].name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(80MB)을 초과합니다.');
     input.value = '';
   }
@@ -1655,7 +1655,7 @@ function checkPdfFile(input) {
     return;
   }
   const mb = file.size / 1024 / 1024;
-  if (mb > 20) {
+  if (mb > 80) {
     alert(file.name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(80MB)을 초과합니다.');
     input.value = '';
   }
@@ -1677,7 +1677,7 @@ async function submitForm() {
   if (!periodOk) { alert('Contract Period type을 선택해주세요.'); return; }
   if (!document.getElementById('p-start').value) { alert('Contract Period start date가 필요합니다.'); return; }
   if (!document.getElementById('f-doc').files.length) { alert('Contract document를 첨부해주세요.'); return; }
-  // 파일 용량 검증 (파일당 최대 20MB, 전체 합계 최대 20MB)
+  // 파일 용량 검증 (파일당 최대 80MB, 전체 합계 최대 80MB)
   const _fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
   const MAX_MB = 80;
   let _totalMB = 0;
