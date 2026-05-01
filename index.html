@@ -1485,8 +1485,8 @@ async function showDetail(reqId) {
       // 체크리스트 응답 로드
       let clResponses = [];
       try {
-        const clData = await api('/sites/' + siteId + '/lists/' + LIST_CL + '/items?$expand=fields&$top=500&$filter=fields/RequestID eq \'' + reqId + '\'');
-        clResponses = clData.value || [];
+        const clData = await api('/sites/' + siteId + '/lists/' + LIST_CL + '/items?$expand=fields&$top=500');
+        clResponses = (clData.value || []).filter(r => String(r.fields.RequestID) === String(reqId));
       } catch(e) { /* 리스트 없으면 무시 */ }
       const apprList = apprData.value.filter(i => i.fields.RequestID == reqId).sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
       if (apprList.length) {
