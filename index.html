@@ -991,8 +991,23 @@ function closeConfirm() {
 async function confirmApproval() {
   if (!_pendingApproval) return;
   const { apprId, action, reqId } = _pendingApproval;
-  const comment = document.getElementById('confirm-comment').value.trim();
+  let comment = document.getElementById('confirm-comment').value.trim();
   if (action === '반려' && !comment) { alert('반려 사유를 입력해주세요.'); return; }
+  // 체크리스트 내용을 comment에 병합
+  if (action === '승인') {
+    const checks = document.querySelectorAll('#confirm-checklist .cl-check');
+    if (checks.length) {
+      const checkedItems = [...checks].filter(cb => cb.checked).map(cb => cb.closest('label').textContent.trim());
+      if (checkedItems.length) {
+        const clSummary = '[체크리스트]
+' + checkedItems.map(t => '✓ ' + t).join('
+');
+        comment = comment ? clSummary + '
+
+' + comment : clSummary;
+      }
+    }
+  }
   window._detailModalWasOpen = false;
   closeConfirm();
   document.getElementById('detail-modal').classList.remove('show');
@@ -1447,16 +1462,8 @@ async function showDetail(reqId) {
         const reqStatus = (reqData.fields.Status||'').trim();
         const myPending = reqStatus === '처리중' ? null :
           apprList.find(a => (a.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && (a.fields.Status||'').trim() === '대기');
-        if (myPending) {
-          // 승인/반려 버튼을 sticky action-bar에 배치
-          const actionBar = document.getElementById('modal-action-bar');
-          if (actionBar) {
-            actionBar.style.display = 'flex';
-            actionBar.innerHTML =
-              '<button onclick="showConfirm(' + myPending.id + ',\'승인\',' + reqId + ',\'' + (myPending.fields.ApproverRole||'') + '\',\'' + (reqData.fields.ContractTemplate||'') + '\')" class="btn-approve" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">✅ 승인</button>' +
-              '<button onclick="showConfirm(' + myPending.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">❌ 반려</button>';
-          }
-        }
+        if (myPending) { window._pendingApproverBtn = myPending; window._pendingReqData = reqData; }
+        else { window._pendingApproverBtn = null; }
       }
     } catch(e) {}
 
@@ -1467,18 +1474,22 @@ async function showDetail(reqId) {
         .replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'')
         .split(';').filter(e => e.trim());
       filesHtml = fileEntries.map(entry => {
-        const name = entry.split('|')[0].trim();
+        const parts = entry.split('||');
+        const name = parts[0].trim();
         if (!name) return '';
-        const newFmt = entry.split('||');
-        if (newFmt.length === 3) {
-          const driveId = newFmt[1].trim();
-          const itemId  = newFmt[2].trim();
+        // CONTRACT_DOC 포맷: 파일명||CONTRACT_DOC||driveId||itemId
+        if (parts.length >= 4 && parts[1].trim() === 'CONTRACT_DOC') {
+          const driveId = parts[2].trim();
+          const itemId  = parts[3].trim();
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + ' <span style="font-size:11px;color:#107c10;font-weight:600">[Contract Doc]</span></a></div>';
+        }
+        // 일반 포맷: 파일명||driveId||itemId
+        if (parts.length === 3) {
+          const driveId = parts[1].trim();
+          const itemId  = parts[2].trim();
           return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
         }
-        const parts = entry.split('|');
-        const url = parts[1] ? parts[1].trim() : '';
-        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
-        return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
+        return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
       }).filter(Boolean).join('');
     }
     const secFiles = '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">첨부파일</div>';
@@ -1514,6 +1525,22 @@ async function showDetail(reqId) {
     }
 
     document.getElementById('modal-content').innerHTML = html + approvedFileHtml + secFiles + filesHtml + apprHtml;
+
+    // 승인/반려 버튼 action-bar 렌더링 (innerHTML 세팅 후)
+    const actionBar = document.getElementById('modal-action-bar');
+    if (actionBar) {
+      if (window._pendingApproverBtn) {
+        const mp = window._pendingApproverBtn;
+        const rd = window._pendingReqData;
+        actionBar.style.display = 'flex';
+        actionBar.innerHTML =
+          '<button onclick="showConfirm(' + mp.id + ',\'승인\',' + reqId + ',\'' + (mp.fields.ApproverRole||'') + '\',\'' + (rd.fields.ContractTemplate||'') + '\')" class="btn-approve" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">✅ 승인</button>' +
+          '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">❌ 반려</button>';
+      } else {
+        actionBar.style.display = 'none';
+        actionBar.innerHTML = '';
+      }
+    }
 
     // 승인 파일 다운로드 이벤트
     document.querySelectorAll('.approved-dl-link').forEach(a => {
