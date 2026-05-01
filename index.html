@@ -847,7 +847,7 @@ async function loadApprovalQueue() {
 
 // ── 커스텀 결재 확인 팝업 ──
 let _pendingApproval = null;
-function showConfirm(apprId, action, reqId) {
+function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
   _pendingApproval = { apprId, action, reqId };
   const isReject = action === '반려';
   const detailModal = document.getElementById('detail-modal');
@@ -863,6 +863,110 @@ function showConfirm(apprId, action, reqId) {
   okBtn.style.background = isReject ? '#a4262c' : '#107c10';
   okBtn.style.color = '#fff';
   okBtn.onclick = confirmApproval;
+
+  // ── 역할별 체크리스트 ──
+  const clEl = document.getElementById('confirm-checklist');
+  clEl.innerHTML = '';
+  if (!isReject) {
+    const role = apprRole || '';
+    const isNonStd = contractType.toLowerCase().includes('non-standard');
+    const sections = [];
+
+    // Compliance Director → Compliance Officer 체크리스트
+    if (role.includes('Compliance')) {
+      sections.push({
+        title: '✅ Compliance Officer 체크리스트',
+        color: '#1e40af',
+        items: [
+          'Compliance Due Diligence reviewed',
+          'Due Diligence is performed by RBO and valid',
+          'Privacy Data Protection reviewed',
+          'Appropriate clause is in place and in compliance with relevant laws and Mercedes-Benz Data Protection Policy'
+        ],
+        yesno: [false, true, false, true]
+      });
+    }
+
+    // Contract Checklist (Controlling, Sales 전용)
+    if (role.includes('Contract Checklist') || role.includes('Controlling')) {
+      sections.push({
+        title: '✅ Controlling 체크리스트',
+        color: '#166534',
+        items: [
+          'In standard conditions (No buy-back guarantee; no deviation from discount table) — If No, issue resolved',
+          'No deviations from contract commercial terms as approved — If No, issue resolved',
+          'No deviations from the approved pricing'
+        ],
+        yesno: [true, true, true]
+      });
+    }
+
+    // Accounting Director → Tax 항목 (무조건)
+    if (role.includes('Accounting')) {
+      // Non-Standard일 때만: Accounting Dept 섹션
+      if (isNonStd) {
+        sections.push({
+          title: '✅ Accounting Department (Non-Standard Template)',
+          color: '#92400e',
+          items: [
+            'Payment Term reviewed — Standard / Intercompany Standard / Non-standard / N/A',
+            'Immediate revenue recognition',
+            'Any deferred revenue recognition',
+            'Provisions or accruals and deferrals, accounting of utilization and dissolution are necessary',
+            'Services are provided by a different Group company or third parties',
+            'Individual contractual regulations are subsequent, conditionally granted price reductions',
+            'Extended guarantees for existing contract',
+            'Additional service agreements for existing contract',
+            'Additional information required for recognizing values for accounting purposes',
+            'Dual GAAP postings are necessary',
+            'None of above'
+          ],
+          yesno: Array(11).fill(false)
+        });
+      }
+      // 무조건: Accounting Tax 섹션
+      sections.push({
+        title: '✅ Accounting Department — Tax',
+        color: '#7c3aed',
+        items: [
+          'Tax Implication checked on potential tax risk to the Company',
+          'Potential tax risk identified',
+          'Potential tax risk is NOT identified',
+          'Taxation and who bear tax clearly defined?'
+        ],
+        yesno: Array(4).fill(false)
+      });
+    }
+
+    if (sections.length) {
+      clEl.innerHTML = sections.map((s,si) => `
+        <div style="margin-bottom:14px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+          <div style="background:${s.color}10;border-bottom:1px solid #e2e8f0;padding:8px 12px;font-size:.75rem;font-weight:700;color:${s.color}">${s.title}</div>
+          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+            ${s.items.map((item,ii) => `
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#374151;cursor:pointer">
+                <input type="checkbox" class="cl-check" data-sec="${si}" data-req="${s.yesno[ii]}" style="margin-top:2px;flex-shrink:0">
+                <span>${item}</span>
+              </label>`).join('')}
+          </div>
+        </div>`).join('');
+      // 필수 체크 검증
+      okBtn.onclick = () => {
+        const required = clEl.querySelectorAll('.cl-check[data-req="true"]');
+        const unchecked = [...required].filter(cb => !cb.checked);
+        if (unchecked.length) {
+          alert('필수 체크리스트 항목을 모두 확인해주세요.');
+          return;
+        }
+        confirmApproval();
+      };
+    } else {
+      okBtn.onclick = confirmApproval;
+    }
+  } else {
+    okBtn.onclick = confirmApproval;
+  }
+
   document.getElementById('confirm-modal').style.display = 'flex';
 }
 function closeConfirm() {
@@ -1315,7 +1419,7 @@ async function showDetail(reqId) {
         const myPending = apprList.find(a => (a.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && (a.fields.Status||'').trim() === '대기');
         if (myPending) {
           apprHtml += '<div style="display:flex;gap:10px;margin-top:14px">' +
-            '<button onclick="showConfirm(' + myPending.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">✅ 승인</button>' +
+            '<button onclick="showConfirm(' + myPending.id + ',\'승인\',' + reqId + ',\'' + (myPending.fields.ApproverRole||'') + '\',\'' + (reqData.fields.ContractTemplate||'') + '\')" class="btn-approve" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">✅ 승인</button>' +
             '<button onclick="showConfirm(' + myPending.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">❌ 반려</button>' +
             '</div>';
         }
@@ -2153,9 +2257,10 @@ async function uniConfirmApproval() {
 </div>
 <!-- Confirm Modal -->
 <div id="confirm-modal" onclick="event.stopPropagation()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1100;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:10px;padding:28px 28px 20px;max-width:420px;width:92%;box-shadow:0 4px 24px rgba(0,0,0,.2)">
+  <div style="background:#fff;border-radius:10px;padding:28px 28px 20px;max-width:580px;width:94%;box-shadow:0 4px 24px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
     <div id="confirm-title" style="font-size:1rem;font-weight:700;color:#323130;margin-bottom:6px"></div>
-    <div id="confirm-sub" style="font-size:.78rem;color:#605e5c;margin-bottom:14px"></div>
+    <div id="confirm-sub" style="font-size:.78rem;color:#605e5c;margin-bottom:12px"></div>
+    <div id="confirm-checklist" style="max-height:360px;overflow-y:auto;margin-bottom:12px"></div>
     <textarea id="confirm-comment" rows="3" style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:8px 10px;font-size:.82rem;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
     <div style="display:flex;justify-content:flex-end;gap:8px">
       <button onclick="closeConfirm()" style="background:#fff;border:1px solid #d2d0ce;border-radius:4px;padding:7px 20px;font-size:.85rem;cursor:pointer;font-family:inherit">취소</button>
