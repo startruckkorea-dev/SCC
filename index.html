@@ -1059,6 +1059,7 @@ async function processApproval(apprId, action, reqId, comment='') {
         // ── 최종 승인 완료: 워터마크 + 해시 + Approved_Contracts 보관 ──
         try {
           console.log('🔄 최종 승인 후처리 시작 (reqId:', reqId, ')');
+          loading(true, '📄 계약서 처리 중...', 'Watermark 적용 및 보안 Hash 생성 중입니다.\n잠시만 기다려주세요.');
           await processApprovedContract(reqId);
           console.log('✅ 최종 승인 후처리 완료');
         } catch(e) {
@@ -1451,7 +1452,39 @@ async function showDetail(reqId) {
               '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (af.ApprovalOrder||'') + '차 ' + (af.ApproverRole||'') + '</div>' +
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
-              (af.Comment ? '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + af.Comment + '</div>' : '') +
+              (af.Comment ? (() => {
+              const raw = af.Comment;
+              const clIdx = raw.indexOf('[체크리스트]');
+              // 코멘트에서 체크리스트 파트와 일반 의견 파트 분리
+              let clPart = '', notePart = '';
+              if (clIdx >= 0) {
+                const afterCl = raw.substring(clIdx + 7); // '[체크리스트]' 이후
+                const noteBreak = afterCl.indexOf('\n\n');
+                if (noteBreak >= 0) {
+                  clPart = afterCl.substring(0, noteBreak).trim();
+                  notePart = afterCl.substring(noteBreak + 2).trim();
+                } else {
+                  clPart = afterCl.trim();
+                }
+              } else {
+                notePart = raw.trim();
+              }
+              let html = '';
+              if (clPart) {
+                const items = clPart.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('✓'));
+                if (items.length) {
+                  html += '<div style="margin-top:6px;background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:8px 10px">' +
+                    '<div style="font-size:11px;font-weight:700;color:#0078d4;margin-bottom:5px">📋 체크리스트 확인 항목</div>' +
+                    '<div style="display:flex;flex-direction:column;gap:3px">' +
+                    items.map((item,i) => '<div style="font-size:11px;color:#374151;display:flex;gap:5px"><span style="color:#107c10;font-weight:700;flex-shrink:0">' + (i+1) + '.</span><span>' + item.substring(2) + '</span></div>').join('') +
+                    '</div></div>';
+                }
+              }
+              if (notePart) {
+                html += '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + notePart + '</div>';
+              }
+              return html;
+            })() : '') +
               '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + (af.Status||'') + '</span></div>';
           }).join('') + '</div>';
         // 내 결재 대기 건 버튼
@@ -2316,10 +2349,13 @@ async function uniConfirmApproval() {
 </div>
 
 <!-- Loading -->
-<div id="loading" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.75);align-items:center;justify-content:center;z-index:999">
-  <div style="background:#fff;border-radius:12px;padding:24px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.12)">
-    <div style="width:28px;height:28px;border:3px solid #e2e8f0;border-top:3px solid #0078d4;border-radius:50%;animation:spin .7s linear infinite"></div>
-    <span style="font-size:.82rem;color:#475569">처리 중...</span>
+<div id="loading" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:9999">
+  <div style="background:#fff;border-radius:14px;padding:28px 44px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,.22);min-width:260px">
+    <div style="width:32px;height:32px;border:3px solid #e2e8f0;border-top:3px solid #0078d4;border-radius:50%;animation:spin .7s linear infinite"></div>
+    <div style="text-align:center">
+      <div id="loading-title" style="font-size:.9rem;font-weight:700;color:#1e293b;margin-bottom:4px">처리 중...</div>
+      <div id="loading-sub" style="font-size:.75rem;color:#64748b"></div>
+    </div>
   </div>
 </div>
 <!-- Confirm Modal -->
