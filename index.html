@@ -915,7 +915,7 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
         ${header('Compliance Officer','#1e40af','#e8f0fe','#c7d7f4')}
         ${wrap(`
           ${chk('co_1','Compliance Due Diligence reviewed')}
-          ${row('Due Diligence is performed by RBO and valid','co_dd',['YES','NO'],true)}
+          ${row('Due Diligence is performed by RBO and valid','co_dd',['YES','NO','N/A'],true)}
           ${chk('co_3','Privacy Data Protection reviewed')}
           ${row('Appropriate clause is in place and the contract is in compliance with relevant laws and Mercedes-Benz Data Protection Policy','co_clause',['YES','NO','N/A'],true)}
           <div style="margin-top:8px;font-size:.72rem;color:#6b7280">Comment</div>
@@ -2017,6 +2017,28 @@ document.addEventListener('click', async function(e) {
   } catch(err) { alert('파일 열기 오류: ' + err.message); }
   finally { loading(false); }
 });
+function fppShow() { document.getElementById('final-process-popup').style.display='flex'; }
+function fppHide() { document.getElementById('final-process-popup').style.display='none'; }
+function fppStep(id, state, icon) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.dataset.state = state;
+  el.querySelector('.fpp-icon').textContent = icon;
+  const steps = ['fpp-s1','fpp-s2','fpp-s3','fpp-s4','fpp-s5','fpp-s6'];
+  const done = steps.filter(s => document.getElementById(s)?.dataset.state === 'done').length;
+  const bar = document.getElementById('fpp-bar');
+  if (bar) bar.style.width = Math.round((done/steps.length)*100) + '%';
+}
+function fppMsg(msg) { const el=document.getElementById('fpp-msg'); if(el) el.textContent=msg; }
+function fppReset() {
+  ['fpp-s1','fpp-s2','fpp-s3','fpp-s4','fpp-s5','fpp-s6'].forEach(id => {
+    const el=document.getElementById(id);
+    if(el){el.dataset.state='wait';el.querySelector('.fpp-icon').textContent='⏳';}
+  });
+  const bar=document.getElementById('fpp-bar');
+  if(bar) bar.style.width='0%';
+  fppMsg(' ');
+}
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
 function showLoginError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 
