@@ -888,7 +888,8 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
   clEl.innerHTML = '';
   if (!isReject) {
     const role = apprRole || '';
-    const isNonStd = contractType.toLowerCase().includes('non-standard');
+    const isNonStd = (contractType||'').toLowerCase().includes('non-standard');
+    console.log('[Checklist] role:', apprRole, '| contractType:', contractType, '| isNonStd:', isNonStd);
     let clHtml = '';
     const row = (label, name, opts, indent=false) => `
       <div style="margin:${indent?'2px 0 6px 16px':'6px 0'};font-size:.75rem">
