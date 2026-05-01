@@ -1081,7 +1081,10 @@ async function processApproval(apprId, action, reqId, comment='') {
           console.log('✅ 최종 승인 후처리 완료');
         } catch(e) {
           console.error('❌ 승인 후처리 오류:', e);
-          alert('승인은 완료되었으나 파일 처리 중 오류가 발생했습니다.\n오류: ' + e.message);
+          alert('파일 처리 중 오류가 발생했습니다. 승인완료로 처리합니다.\n오류: ' + e.message);
+        } finally {
+          // 파일 처리 성공/실패 무관하게 반드시 승인완료로 전환
+          await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
         }
       }
     }
