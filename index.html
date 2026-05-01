@@ -1021,10 +1021,6 @@ async function processApproval(apprId, action, reqId, comment='') {
     await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH', {
       fields: { Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }
     });
-    // 승인 즉시 "처리중" 상태로 업데이트 (최종 처리 전까지 중복 방지)
-    if (action === '승인') {
-      await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '처리중' } });
-    }
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
     } else {
@@ -1053,9 +1049,9 @@ async function processApproval(apprId, action, reqId, comment='') {
       }
 
       if (pending.length === 0) {
-        // 미처리 결재자 없음 = 마지막 → 승인완료 + 후처리
-        console.log('✅ 모든 결재 완료 → 승인완료 처리');
-        await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
+        // 미처리 결재자 없음 = 마지막 → 처리중으로 잠금 후 후처리
+        console.log('✅ 모든 결재 완료 → 처리중 설정 후 승인완료 처리');
+        await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '처리중' } });
         // ── 최종 승인 완료: 워터마크 + 해시 + Approved_Contracts 보관 ──
         try {
           console.log('🔄 최종 승인 후처리 시작 (reqId:', reqId, ')');
