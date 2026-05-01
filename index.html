@@ -882,92 +882,130 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
   if (!isReject) {
     const role = apprRole || '';
     const isNonStd = contractType.toLowerCase().includes('non-standard');
-    const sections = [];
+    let clHtml = '';
 
-    // Compliance Director → Compliance Officer 체크리스트
+    // ── Compliance Director: Compliance Officer 섹션 ──
     if (role.includes('Compliance')) {
-      sections.push({
-        title: '✅ Compliance Officer 체크리스트',
-        color: '#1e40af',
-        items: [
-          'Compliance Due Diligence reviewed',
-          'Due Diligence is performed by RBO and valid',
-          'Privacy Data Protection reviewed',
-          'Appropriate clause is in place and in compliance with relevant laws and Mercedes-Benz Data Protection Policy'
-        ],
-        yesno: [false, true, false, true]
-      });
-    }
-
-    // Contract Checklist (Controlling, Sales 전용)
-    if (role.includes('Contract Checklist') || role.includes('Controlling')) {
-      sections.push({
-        title: '✅ Controlling 체크리스트',
-        color: '#166534',
-        items: [
-          'In standard conditions (No buy-back guarantee; no deviation from discount table) — If No, issue resolved',
-          'No deviations from contract commercial terms as approved — If No, issue resolved',
-          'No deviations from the approved pricing'
-        ],
-        yesno: [true, true, true]
-      });
-    }
-
-    // Accounting Director → Tax 항목 (무조건)
-    if (role.includes('Accounting')) {
-      // Non-Standard일 때만: Accounting Dept 섹션
-      if (isNonStd) {
-        sections.push({
-          title: '✅ Accounting Department (Non-Standard Template)',
-          color: '#92400e',
-          items: [
-            'Payment Term reviewed — Standard / Intercompany Standard / Non-standard / N/A',
-            'Immediate revenue recognition',
-            'Any deferred revenue recognition',
-            'Provisions or accruals and deferrals, accounting of utilization and dissolution are necessary',
-            'Services are provided by a different Group company or third parties',
-            'Individual contractual regulations are subsequent, conditionally granted price reductions',
-            'Extended guarantees for existing contract',
-            'Additional service agreements for existing contract',
-            'Additional information required for recognizing values for accounting purposes',
-            'Dual GAAP postings are necessary',
-            'None of above'
-          ],
-          yesno: Array(11).fill(false)
-        });
-      }
-      // 무조건: Accounting Tax 섹션
-      sections.push({
-        title: '✅ Accounting Department — Tax',
-        color: '#7c3aed',
-        items: [
-          'Tax Implication checked on potential tax risk to the Company',
-          'Potential tax risk identified',
-          'Potential tax risk is NOT identified',
-          'Taxation and who bear tax clearly defined?'
-        ],
-        yesno: Array(4).fill(false)
-      });
-    }
-
-    if (sections.length) {
-      clEl.innerHTML = sections.map((s,si) => `
-        <div style="margin-bottom:14px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
-          <div style="background:${s.color}10;border-bottom:1px solid #e2e8f0;padding:8px 12px;font-size:.75rem;font-weight:700;color:${s.color}">${s.title}</div>
-          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
-            ${s.items.map((item,ii) => `
-              <label style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#374151;cursor:pointer">
-                <input type="checkbox" class="cl-check" data-sec="${si}" data-req="${s.yesno[ii]}" style="margin-top:2px;flex-shrink:0">
-                <span>${item}</span>
-              </label>`).join('')}
+      clHtml += `
+      <div style="margin-bottom:14px;border:1px solid #c7d7f4;border-radius:8px;overflow:hidden">
+        <div style="background:#e8f0fe;border-bottom:1px solid #c7d7f4;padding:8px 12px;font-size:.75rem;font-weight:700;color:#1e40af">Compliance Officer</div>
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:.75rem;color:#374151">
+          <div>
+            <div style="margin-bottom:4px">Compliance Due Diligence reviewed</div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_1" value="YES" class="cl-radio" data-key="co_1"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_1" value="NO" class="cl-radio" data-key="co_1"> NO</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_1" value="N/A" class="cl-radio" data-key="co_1"> N/A</label>
+            </div>
           </div>
-        </div>`).join('');
-      // 필수 체크 검증
+          <div>
+            <div style="margin-bottom:4px">Due Diligence is performed by RBO and valid</div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_2" value="YES" class="cl-radio" data-key="co_2"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_2" value="NO" class="cl-radio" data-key="co_2"> NO</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_2" value="N/A" class="cl-radio" data-key="co_2"> N/A</label>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom:4px">Privacy Data Protection reviewed</div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_3" value="YES" class="cl-radio" data-key="co_3"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_3" value="NO" class="cl-radio" data-key="co_3"> NO</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_3" value="N/A" class="cl-radio" data-key="co_3"> N/A</label>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom:4px">Appropriate clause is in place and in compliance with relevant laws and Mercedes-Benz Data Protection Policy</div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_4" value="YES" class="cl-radio" data-key="co_4"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_4" value="NO" class="cl-radio" data-key="co_4"> NO</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_co_4" value="N/A" class="cl-radio" data-key="co_4"> N/A</label>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Contract Checklist (Controlling, Sales 전용) ──
+    if (role.includes('Contract Checklist') || role.includes('Controlling')) {
+      clHtml += `
+      <div style="margin-bottom:14px;border:1px solid #bbf7d0;border-radius:8px;overflow:hidden">
+        <div style="background:#dcfce7;border-bottom:1px solid #bbf7d0;padding:8px 12px;font-size:.75rem;font-weight:700;color:#166534">Controlling</div>
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:.75rem;color:#374151">
+          <div>
+            <div style="margin-bottom:4px">In standard conditions (No buy-back guarantee; no deviation from discount table)<br><span style="color:#6b7280;font-size:.72rem">If No, issue resolved</span></div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_1" value="YES" class="cl-radio" data-key="ct_1"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_1" value="NO" class="cl-radio" data-key="ct_1"> NO</label>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom:4px">No deviations from contract commercial terms as approved<br><span style="color:#6b7280;font-size:.72rem">If No, issue resolved</span></div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_2" value="YES" class="cl-radio" data-key="ct_2"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_2" value="NO" class="cl-radio" data-key="ct_2"> NO</label>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom:4px">No deviations from the approved pricing</div>
+            <div style="display:flex;gap:10px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_3" value="YES" class="cl-radio" data-key="ct_3"> YES</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_3" value="NO" class="cl-radio" data-key="ct_3"> NO</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ct_3" value="NA" class="cl-radio" data-key="ct_3"> NA</label>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Accounting Director ──
+    if (role.includes('Accounting')) {
+      // Non-Standard일 때만
+      if (isNonStd) {
+        clHtml += `
+        <div style="margin-bottom:14px;border:1px solid #fed7aa;border-radius:8px;overflow:hidden">
+          <div style="background:#fff7ed;border-bottom:1px solid #fed7aa;padding:8px 12px;font-size:.75rem;font-weight:700;color:#92400e">Accounting Department <span style="font-weight:400">(For non-standard contract template only)</span></div>
+          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:.75rem;color:#374151">
+            <div>
+              <div style="margin-bottom:4px">Payment Term reviewed</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ac_pt" value="Standard" class="cl-radio" data-key="ac_pt"> Standard</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ac_pt" value="Intercompany Standard" class="cl-radio" data-key="ac_pt"> Intercompany Standard</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ac_pt" value="Non-standard" class="cl-radio" data-key="ac_pt"> Non-standard</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="radio" name="cl_ac_pt" value="N/A" class="cl-radio" data-key="ac_pt"> N/A</label>
+              </div>
+            </div>
+            <div style="color:#6b7280;font-size:.72rem;margin:2px 0">아래 항목 중 해당하는 것을 모두 선택하세요:</div>
+            ${['Immediate revenue recognition','Any deferred revenue recognition','Provisions or accruals and deferrals (accounting of utilization and dissolution) are necessary','Services are provided by a different Group company or third parties','Individual contractual regulations are subsequent, conditionally granted price reductions','Extended guarantees for existing contract','Additional service agreements for existing contract','Additional information required for recognizing values for accounting purposes','Dual GAAP postings are necessary','None of above'].map((item,i) =>
+              `<label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer"><input type="checkbox" class="cl-check ac-multi" style="margin-top:2px;flex-shrink:0"><span>${item}</span></label>`
+            ).join('')}
+          </div>
+        </div>`;
+      }
+      // 무조건: Tax 섹션
+      clHtml += `
+      <div style="margin-bottom:14px;border:1px solid #e9d5ff;border-radius:8px;overflow:hidden">
+        <div style="background:#f5f3ff;border-bottom:1px solid #e9d5ff;padding:8px 12px;font-size:.75rem;font-weight:700;color:#6d28d9">Accounting Department Tax</div>
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:.75rem;color:#374151">
+          <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer"><input type="checkbox" class="cl-check ac-tax" style="margin-top:2px;flex-shrink:0"><span>Tax Implication checked on potential tax risk to the Company</span></label>
+          <div style="padding-left:8px;display:flex;flex-direction:column;gap:4px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="cl_tax_risk" value="identified" class="cl-radio" data-key="tax_risk"><span>Potential tax risk identified</span>
+              <input type="text" placeholder="Comment" class="cl-tax-comment" style="border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;font-size:.72rem;width:120px;margin-left:4px"></label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="cl_tax_risk" value="not_identified" class="cl-radio" data-key="tax_risk"><span>Potential tax risk is NOT identified</span></label>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer"><input type="checkbox" class="cl-check ac-tax" style="margin-top:2px;flex-shrink:0"><span>Taxation and who bear tax clearly defined?</span></label>
+        </div>
+      </div>`;
+    }
+
+    if (clHtml) {
+      clEl.innerHTML = clHtml;
+      // 필수 검증: 모든 라디오 그룹에서 최소 1개 선택 확인
       okBtn.onclick = () => {
-        const required = clEl.querySelectorAll('.cl-check[data-req="true"]');
-        const unchecked = [...required].filter(cb => !cb.checked);
-        if (unchecked.length) {
-          alert('필수 체크리스트 항목을 모두 확인해주세요.');
+        const radioGroups = [...new Set([...clEl.querySelectorAll('.cl-radio')].map(r => r.name))];
+        const unselected = radioGroups.filter(name => !clEl.querySelector(`.cl-radio[name="${name}"]:checked`));
+        if (unselected.length) {
+          alert('모든 항목에 대해 선택해주세요. (' + unselected.length + '개 항목 미선택)');
           return;
         }
         confirmApproval();
@@ -995,11 +1033,30 @@ async function confirmApproval() {
   if (action === '반려' && !comment) { alert('반려 사유를 입력해주세요.'); return; }
   // 체크리스트 내용을 comment에 병합
   if (action === '승인') {
-    const checks = document.querySelectorAll('#confirm-checklist .cl-check');
-    if (checks.length) {
-      const checkedItems = [...checks].filter(cb => cb.checked).map(cb => cb.closest('label').textContent.trim());
-      if (checkedItems.length) {
-        const clSummary = '[체크리스트]\n' + checkedItems.map(t => '✓ ' + t).join('\n');
+    const clEl2 = document.getElementById('confirm-checklist');
+    if (clEl2 && clEl2.innerHTML) {
+      const lines = [];
+      // 라디오 선택값
+      const radioGroups = [...new Set([...clEl2.querySelectorAll('.cl-radio')].map(r => r.name))];
+      radioGroups.forEach(name => {
+        const checked = clEl2.querySelector(`.cl-radio[name="${name}"]:checked`);
+        if (checked) {
+          const label = checked.closest('div') || checked.parentElement;
+          const questionEl = label.closest('div')?.previousElementSibling || label.parentElement?.previousElementSibling;
+          const question = questionEl ? questionEl.textContent.trim().split('\n')[0].trim() : name;
+          lines.push(`${question}: ${checked.value}`);
+        }
+      });
+      // 체크박스
+      clEl2.querySelectorAll('.cl-check:checked, .ac-multi:checked, .ac-tax:checked').forEach(cb => {
+        const txt = cb.closest('label')?.textContent.trim();
+        if (txt) lines.push('✓ ' + txt);
+      });
+      // Tax comment
+      const taxComment = clEl2.querySelector('.cl-tax-comment');
+      if (taxComment && taxComment.value) lines.push('Tax risk comment: ' + taxComment.value);
+      if (lines.length) {
+        const clSummary = '[체크리스트]\n' + lines.join('\n');
         comment = comment ? clSummary + '\n\n' + comment : clSummary;
       }
     }
