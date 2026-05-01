@@ -642,6 +642,7 @@ const GRAPH       = 'https://graph.microsoft.com/v1.0';
 const SCOPES      = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
 const LIST_REQ    = 'STK_Contracts';      // SharePoint 리스트 이름 (신청)
 const LIST_APR    = 'STK_ContractApprovals'; // SharePoint 리스트 이름 (결재)
+const LIST_CL     = 'SCC_ChecklistResponses'; // 결재자 체크리스트 응답 저장
 const ADMIN_EMAILS = [
   'admin@startruckkorea.onmicrosoft.com',
   'hye-jin.yun@hyosung.com',
@@ -991,44 +992,51 @@ async function confirmApproval() {
   const { apprId, action, reqId } = _pendingApproval;
   let comment = document.getElementById('confirm-comment').value.trim();
   if (action === '반려' && !comment) { alert('반려 사유를 입력해주세요.'); return; }
-  // 체크리스트 내용을 comment에 병합
+
+  let checklistData = null; // SharePoint 저장용
   if (action === '승인') {
     const clEl2 = document.getElementById('confirm-checklist');
     if (clEl2 && clEl2.innerHTML.trim()) {
       const lines = [];
-      // 체크된 체크박스
-      clEl2.querySelectorAll('.cl-check:checked').forEach(cb => {
+      const clFields = {};
+      // 체크박스
+      clEl2.querySelectorAll('.cl-check').forEach(cb => {
         const lbl = cb.closest('label');
-        if (lbl) lines.push('☑ ' + lbl.textContent.trim().replace(/Comment:.*$/,'').trim());
+        if (!lbl) return;
+        const txt = lbl.textContent.trim().replace(/Comment:.*$/,'').trim();
+        const val = cb.checked ? '☑' : '☐';
+        lines.push(val + ' ' + txt);
+        clFields[cb.id || txt.substring(0,20)] = cb.checked;
       });
-      // 라디오 선택값
+      // 라디오
       [...new Set([...clEl2.querySelectorAll('.cl-radio')].map(r=>r.name))].forEach(name => {
         const sel = clEl2.querySelector(`.cl-radio[name="${name}"]:checked`);
-        if (sel) {
-          const container = sel.closest('div[style*="display:flex"]');
-          const prevDiv = container?.previousElementSibling;
-          const q = prevDiv ? prevDiv.textContent.trim().split('\n')[0].trim() : name;
-          lines.push(`  → ${q}: ${sel.value}`);
-        }
+        const container = sel?.closest('div[style*="display:flex"]');
+        const prevDiv = container?.previousElementSibling;
+        const q = prevDiv ? prevDiv.textContent.trim().split('\n')[0].trim() : name;
+        const val = sel ? sel.value : '(미선택)';
+        lines.push('  → ' + q + ': ' + val);
+        clFields[name] = val;
       });
       // Comment 입력란
       ['co_comment','ct_comment'].forEach(id => {
         const el = clEl2.querySelector('#'+id);
-        if (el && el.value.trim()) lines.push('  Comment: ' + el.value.trim());
+        if (el && el.value.trim()) { lines.push('  Comment: ' + el.value.trim()); clFields[id] = el.value.trim(); }
       });
-      // Tax comment
       const tc = clEl2.querySelector('#tax_comment');
-      if (tc && tc.value.trim()) lines.push('  Tax risk comment: ' + tc.value.trim());
+      if (tc && tc.value.trim()) { lines.push('  Tax risk comment: ' + tc.value.trim()); clFields['tax_comment'] = tc.value.trim(); }
+
       if (lines.length) {
         const clSummary = '[체크리스트]\n' + lines.join('\n');
         comment = comment ? clSummary + '\n\n' + comment : clSummary;
+        checklistData = { apprId, reqId, fields: clFields, summary: clSummary };
       }
     }
   }
   window._detailModalWasOpen = false;
   closeConfirm();
   document.getElementById('detail-modal').classList.remove('show');
-  await processApproval(apprId, action, reqId, comment);
+  await processApproval(apprId, action, reqId, comment, checklistData);
   // 통합결재함이 열려있으면 목록 새로고침
   const uniModal = document.getElementById('unified-modal');
   if (uniModal && uniModal.classList.contains('open')) {
@@ -1036,12 +1044,25 @@ async function confirmApproval() {
   }
 }
 
-async function processApproval(apprId, action, reqId, comment='') {
+async function processApproval(apprId, action, reqId, comment='', checklistData=null) {
   loading(true);
   try {
     await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH', {
       fields: { Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }
     });
+    // 체크리스트 응답 SharePoint 저장
+    if (checklistData && action === '승인') {
+      try {
+        await api('/sites/' + siteId + '/lists/' + LIST_CL + '/items', 'POST', { fields: {
+          Title: 'APR-' + checklistData.apprId + '-REQ-' + checklistData.reqId,
+          RequestID: String(checklistData.reqId),
+          ApprovalID: String(checklistData.apprId),
+          ChecklistSummary: checklistData.summary,
+          ChecklistJSON: JSON.stringify(checklistData.fields).substring(0, 3000),
+          SubmittedAt: new Date().toISOString()
+        }});
+      } catch(ce) { console.warn('체크리스트 저장 실패 (리스트 없으면 무시):', ce.message); }
+    }
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
     } else {
@@ -1461,6 +1482,12 @@ async function showDetail(reqId) {
     let apprHtml = '';
     try {
       const apprData = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
+      // 체크리스트 응답 로드
+      let clResponses = [];
+      try {
+        const clData = await api('/sites/' + siteId + '/lists/' + LIST_CL + '/items?$expand=fields&$top=500&$filter=fields/RequestID eq \'' + reqId + '\'');
+        clResponses = clData.value || [];
+      } catch(e) { /* 리스트 없으면 무시 */ }
       const apprList = apprData.value.filter(i => i.fields.RequestID == reqId).sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
       if (apprList.length) {
         const sc = { '대기':'#7d5700','승인':'#107c10','반려':'#a4262c','대기(잠김)':'#605e5c','승인완료':'#107c10' };
@@ -1472,39 +1499,30 @@ async function showDetail(reqId) {
               '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (af.ApprovalOrder||'') + '차 ' + (af.ApproverRole||'') + '</div>' +
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
-              (af.Comment ? (() => {
-              const raw = af.Comment;
-              const clIdx = raw.indexOf('[체크리스트]');
-              // 코멘트에서 체크리스트 파트와 일반 의견 파트 분리
-              let clPart = '', notePart = '';
-              if (clIdx >= 0) {
-                const afterCl = raw.substring(clIdx + 7); // '[체크리스트]' 이후
-                const noteBreak = afterCl.indexOf('\n\n');
-                if (noteBreak >= 0) {
-                  clPart = afterCl.substring(0, noteBreak).trim();
-                  notePart = afterCl.substring(noteBreak + 2).trim();
-                } else {
-                  clPart = afterCl.trim();
-                }
-              } else {
-                notePart = raw.trim();
-              }
+              (() => {
+              const raw = af.Comment || '';
+              const apprIdStr = String(af.id || '');
+              // SharePoint에서 로드한 체크리스트 응답 찾기
+              const clResp = clResponses.find(r => String(r.fields.ApprovalID) === apprIdStr);
               let html = '';
-              if (clPart) {
-                const items = clPart.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('✓'));
-                if (items.length) {
-                  html += '<div style="margin-top:6px;background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:8px 10px">' +
-                    '<div style="font-size:11px;font-weight:700;color:#0078d4;margin-bottom:5px">📋 체크리스트 확인 항목</div>' +
-                    '<div style="display:flex;flex-direction:column;gap:3px">' +
-                    items.map((item,i) => '<div style="font-size:11px;color:#374151;display:flex;gap:5px"><span style="color:#107c10;font-weight:700;flex-shrink:0">' + (i+1) + '.</span><span>' + item.substring(2) + '</span></div>').join('') +
-                    '</div></div>';
-                }
+              if (clResp && clResp.fields.ChecklistSummary) {
+                const lines = clResp.fields.ChecklistSummary.replace('[체크리스트]','').trim().split('\n').filter(l=>l.trim());
+                html += '<div style="margin-top:6px;background:#f0f6ff;border:1px solid #c7e0f4;border-radius:8px;overflow:hidden">' +
+                  '<div style="background:#e8f0fe;padding:5px 10px;font-size:11px;font-weight:700;color:#1e40af">📋 체크리스트</div>' +
+                  '<div style="padding:6px 10px;display:flex;flex-direction:column;gap:2px">' +
+                  lines.map((l,i) => {
+                    const isRadio = l.trim().startsWith('→') || l.trim().startsWith('  →');
+                    const isComment = l.trim().startsWith('Comment:') || l.trim().startsWith('Tax risk');
+                    const color = isRadio ? '#0078d4' : isComment ? '#605e5c' : (l.includes('☑') ? '#107c10' : '#9ca3af');
+                    return '<div style="font-size:11px;color:' + color + ';padding-left:' + (isRadio||isComment?'12px':'0') + '">' + l.trim() + '</div>';
+                  }).join('') +
+                  '</div></div>';
               }
-              if (notePart) {
-                html += '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + notePart + '</div>';
-              }
+              // 일반 코멘트 (체크리스트 제외)
+              const noteOnly = raw.indexOf('[체크리스트]') >= 0 ? raw.substring(raw.indexOf('\n\n', raw.indexOf('[체크리스트]')) + 2).trim() : raw.trim();
+              if (noteOnly) html += '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + noteOnly + '</div>';
               return html;
-            })() : '') +
+            })() +
               '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + (af.Status||'') + '</span></div>';
           }).join('') + '</div>';
         // 내 결재 대기 건 버튼
@@ -2369,7 +2387,7 @@ async function uniConfirmApproval() {
 </div>
 
 <!-- Loading -->
-<div id="loading" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:9999">
+<div id="loading" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:99999">
   <div style="background:#fff;border-radius:14px;padding:28px 44px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,.22);min-width:260px">
     <div style="width:32px;height:32px;border:3px solid #e2e8f0;border-top:3px solid #0078d4;border-radius:50%;animation:spin .7s linear infinite"></div>
     <div style="text-align:center">
