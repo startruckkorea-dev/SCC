@@ -999,12 +999,8 @@ async function confirmApproval() {
     if (checks.length) {
       const checkedItems = [...checks].filter(cb => cb.checked).map(cb => cb.closest('label').textContent.trim());
       if (checkedItems.length) {
-        const clSummary = '[체크리스트]
-' + checkedItems.map(t => '✓ ' + t).join('
-');
-        comment = comment ? clSummary + '
-
-' + comment : clSummary;
+        const clSummary = '[체크리스트]\n' + checkedItems.map(t => '✓ ' + t).join('\n');
+        comment = comment ? clSummary + '\n\n' + comment : clSummary;
       }
     }
   }
