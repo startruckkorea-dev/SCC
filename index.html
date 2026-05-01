@@ -855,14 +855,19 @@ async function loadApprovalQueue() {
 // ── 커스텀 결재 확인 팝업 ──
 let _pendingApproval = null;
 async function showConfirmWithData(apprId, action, reqId) {
-  // role과 contractTemplate를 API에서 조회 후 showConfirm 호출
   try {
     const [aprData, reqData] = await Promise.all([
       api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId + '?$expand=fields'),
       api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields')
     ]);
-    showConfirm(apprId, action, reqId, aprData.fields.ApproverRole||'', reqData.fields.ContractTemplate||'');
+    const role = aprData.fields.ApproverRole || '';
+    // ContractTemplate 필드 - 여러 가능한 필드명 시도
+    const tmpl = reqData.fields.ContractTemplate || reqData.fields.Contract_x0020_Template || '';
+    console.log('[CL-debug] reqData fields keys:', Object.keys(reqData.fields).filter(k=>k.toLowerCase().includes('tmpl')||k.toLowerCase().includes('template')||k.toLowerCase().includes('contract')));
+    console.log('[CL-debug] tmpl value:', tmpl);
+    showConfirm(apprId, action, reqId, role, tmpl);
   } catch(e) {
+    console.error('showConfirmWithData error:', e);
     showConfirm(apprId, action, reqId);
   }
 }
@@ -1026,7 +1031,7 @@ async function confirmApproval() {
           const prevSib = radioWrap?.previousElementSibling;
           const q = prevSib ? prevSib.textContent.trim().replace(/\n.*/,'').trim() : el.name;
           const val = sel ? sel.value : '(미선택)';
-          lines.push('  → ' + q + ': ' + val);
+          lines.push('  → ' + (el.name === 'ac_pt' ? 'Payment Term reviewed' : q) + ': ' + val);
           clFields[el.name] = val;
         } else if (el.type === 'text') {
           if (!el.value.trim()) return;
@@ -1214,6 +1219,7 @@ async function processApprovedContract(reqId) {
     const fileResp = await fetch(dlUrl);
     const fileBlob = await fileResp.arrayBuffer();
     const fileBytes = new Uint8Array(fileBlob);
+    fppStep('fpp-s2','done','✅'); fppStep('fpp-s3','active','🔄'); fppMsg('STK Watermark 적용 중...');
 
     // 6. 파일 처리 (PDF 워터마크 or 그대로 저장)
     let finalBytes = fileBytes;
@@ -1230,12 +1236,14 @@ async function processApprovedContract(reqId) {
       }
     }
 
+    fppStep('fpp-s3','done','✅'); fppStep('fpp-s4','active','🔄'); fppMsg('SHA-256 Hash 계산 중...');
     // 5. SHA-256 해시 계산은 업로드 후 SharePoint에서 다시 다운받아 계산 (변형 방지)
     let hashHex = '';
 
     // 7. Approved_Contracts 폴더에 저장
     const uploadPath = `Approved_Contracts/${reqId}/${encodeURIComponent(savedName)}`;
     console.log('업로드 시도:', uploadPath);
+    fppStep('fpp-s4','done','✅'); fppStep('fpp-s5','active','🔄'); fppMsg('승인 파일 SharePoint 저장 중...');
     const uploadResp = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${docDrive.id}/root:/${uploadPath}:/content`,
       {
@@ -1247,6 +1255,8 @@ async function processApprovedContract(reqId) {
     if (!uploadResp.ok) {
       const errText = await uploadResp.text();
       console.error('업로드 실패:', uploadResp.status, errText);
+    } else {
+      fppStep('fpp-s5','done','✅'); fppMsg('승인 기록 저장 중...');
     }
     const uploadedItem = uploadResp.ok ? await uploadResp.json() : null;
     console.log('Approved_Contracts 저장 완료:', savedName, uploadedItem?.webUrl);
