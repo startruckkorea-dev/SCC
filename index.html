@@ -971,18 +971,6 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
       // 필수 강제 없음 - 그냥 승인 가능
       okBtn.onclick = confirmApproval;
     } else {
-      clEl.innerHTML = clHtml;
-      // 필수 검증: 모든 라디오 그룹에서 최소 1개 선택 확인
-      okBtn.onclick = () => {
-        const radioGroups = [...new Set([...clEl.querySelectorAll('.cl-radio')].map(r => r.name))];
-        const unselected = radioGroups.filter(name => !clEl.querySelector(`.cl-radio[name="${name}"]:checked`));
-        if (unselected.length) {
-          alert('모든 항목에 대해 선택해주세요. (' + unselected.length + '개 항목 미선택)');
-          return;
-        }
-        confirmApproval();
-      };
-    } else {
       okBtn.onclick = confirmApproval;
     }
   } else {
