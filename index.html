@@ -570,7 +570,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="btn-row">
         <button class="btn-secondary" onclick="resetForm()">초기화</button>
-        <button class="btn-primary"   onclick="submitForm()">제출</button>
+        <button class="btn-primary" id="btn-submit" onclick="submitForm()">제출</button>
       </div>
     </div>
   </div>
@@ -1663,6 +1663,9 @@ function checkPdfFile(input) {
 
 // ── Submit ──
 async function submitForm() {
+  const submitBtn = document.getElementById('btn-submit');
+  if (submitBtn && submitBtn.disabled) return; // 중복 제출 방지
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '제출 중...'; submitBtn.style.background = '#a0aec0'; }
   const checks = [
     ['sel-type','Type'],['f-title','Title of Contract'],
     ['f-partner','Contract Partner'],['f-objective','Objective of Contract'],
@@ -1832,7 +1835,7 @@ async function submitForm() {
     resetForm();
     switchTab('list');
   } catch(e) { alert('오류: ' + e.message); }
-  finally { loading(false); }
+  finally { loading(false); const btn=document.getElementById('btn-submit'); if(btn){btn.disabled=false;btn.textContent='제출';btn.style.background='';} }
 }
 
 // ── Reset Form ──
