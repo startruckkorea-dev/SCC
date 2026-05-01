@@ -480,9 +480,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="section-title">5. 결재자 지정 (Approvers)</div>
       <div style="font-size:11px;color:#605e5c;background:#f9f8f7;border:1px solid #edebe9;border-radius:4px;padding:8px 12px;margin-bottom:12px;line-height:1.8">
         <b>결재 라인 구성 기준</b><br>
-        1차 RBO Director · 2차 Legal Director · 3차 Compliance Director <span style="color:#0078d4">(기본 고정)</span><br>
+        1차 Line Manager · 2차 Department Head · 3차 Legal &amp; Compliance <span style="color:#0078d4">(기본 고정)</span><br>
         <b style="color:#0078d4">Type = Sales</b> 인 경우: 4차 Controlling 팀장 (Contract Checklist) 추가<br>
-        5차 Accounting Director · <b>Final signing off에서 "corporate chop" 또는 "chop only" 선택 시</b>: 6차 CFO · 7차 CEO 자동 추가<br>
+        Accounting 다음 · <b>Final signing off에서 "signatures and corporate chop" 또는 "chop only" 선택 시</b>: CFO · CEO · RD 자동 추가<br>
         <b style="color:#a4262c">최종 결재자: RD</b>
       </div>
 
@@ -1904,10 +1904,10 @@ async function submitForm() {
 
     const isSales = document.getElementById('sel-type').value === 'Sales';
     const approvers = [
-      { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(RBO Director)', order: 1 },
+      { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(Line Manager)', order: 1 },
     ];
     if (document.getElementById('a2-email').value) {
-      approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Legal Director)', order: 2 });
+      approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Department Head)', order: 2 });
     }
     approvers.push(A3); // 3차: Compliance Director (고정)
     if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
