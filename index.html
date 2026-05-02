@@ -1075,9 +1075,9 @@ async function printApprovalDoc(reqId) {
 
     // 결재 내용 구성
     const reqData = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
-    const aprData = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$filter=fields/RequestID eq ' + reqId + '&$orderby=fields/ApprovalOrder');
+    const aprData = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
     const f = reqData.fields;
-    const aprs = (aprData.value || []).sort((a,b) => (a.fields.ApprovalOrder||0)-(b.fields.ApprovalOrder||0));
+    const aprs = (aprData.value || []).filter(a => String(a.fields.RequestID) === String(reqId)).sort((a,b) => (a.fields.ApprovalOrder||0)-(b.fields.ApprovalOrder||0));
 
     const now = new Date();
     const nowStr = now.toLocaleDateString('ko-KR') + ' ' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
@@ -1760,7 +1760,7 @@ async function showDetail(reqId) {
     const actionBar = document.getElementById('modal-action-bar');
     if (actionBar) {
       const mp = window._pendingApproverBtn;
-      const printBtnHtml = '<button onclick="printApprovalDoc(' + reqId + ')" style="border:1px solid #0078d4;background:#fff;color:#0078d4;border-radius:6px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button> ';
+      const printBtnHtml = '<div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><button onclick="printApprovalDoc(' + reqId + ')" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button><span style="font-size:.72rem;color:#605e5c">Accounting · Chop 승인 목적용</span></div> ';
       actionBar.style.display = 'flex';
       if (mp) {
         actionBar.innerHTML = printBtnHtml +
