@@ -1132,10 +1132,39 @@ async function printApprovalDoc(reqId) {
   <div class="row"><span class="label">Type</span><span class="value">${f.ContractCompanyType||'-'}</span></div>
   <div class="row"><span class="label">Contract Type</span><span class="value">${f.ContractType||'-'}</span></div>
   <div class="row"><span class="label">Contract Partner</span><span class="value">${f.ContractPartner||'-'}</span></div>
+  <div class="row"><span class="label">Objective</span><span class="value">${(f.Objective||'-').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#58;/g,':').trim()}</span></div>
   <div class="row"><span class="label">Contract Value</span><span class="value">${f.ContractValue||'-'} ${f.Currency||''}</span></div>
-  <div class="row"><span class="label">Contract Period</span><span class="value">${f.ContractPeriod||'-'}</span></div>
+  <div class="row"><span class="label">Contract Period</span><span class="value">${f.PeriodType||'-'}${f.PeriodStart ? ' | ' + f.PeriodStart.substring(0,10) + ' ~ ' + (f.PeriodEnd ? f.PeriodEnd.substring(0,10) : 'No end') : ''}</span></div>
+  <div class="row"><span class="label">Payment Term</span><span class="value">${f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-'}</span></div>
   <div class="row"><span class="label">Final Signing Off</span><span class="value"><b>${f.FinalSignOff||'-'}</b></span></div>
 </div>
+
+${(()=>{
+  const tmpl = (f.ContractTemplate||'').replace(/<[^>]*>/g,'').replace(/&#58;/g,':').replace(/&amp;/g,'&').trim();
+  if (!tmpl) return '';
+  const lines = tmpl.split(';').map(l=>l.trim()).filter(Boolean);
+  return '<div class="section"><div class="sec-title">3. Contract Template</div>' +
+    lines.map(l=>'<div class="row"><span class="label" style="min-width:8px">✓</span><span class="value">' + l + '</span></div>').join('') +
+    '</div>';
+})()}
+
+${(()=>{
+  const hasBiz = f.BizTermsReviewed || f.DDPerformed || f.PersonalInfo || f.SMRCompliance || f.FinalSignOff;
+  if (!hasBiz) return '';
+  let html = '<div class="section"><div class="sec-title">4. Compliance / Final Check</div>';
+  if (f.BizTermsReviewed) html += '<div class="row"><span class="label">Business / commercial terms reviewed</span><span class="value">' + f.BizTermsReviewed.toUpperCase() + '</span></div>';
+  if (f.DDPerformed) {
+    const ddDetail = f.DDId ? ' &nbsp;(DD ID: ' + f.DDId + ')' : '';
+    html += '<div class="row"><span class="label">Is Compliance Due Diligence performed?</span><span class="value">' + f.DDPerformed.toUpperCase() + ddDetail + '</span></div>';
+  }
+  if (f.PersonalInfo) {
+    const stdDetail = f.PersonalInfoStd ? '  →  Standard contract: ' + f.PersonalInfoStd.toUpperCase() : '';
+    html += '<div class="row"><span class="label">Is personal Information disclosed?</span><span class="value">' + f.PersonalInfo.toUpperCase() + stdDetail + '</span></div>';
+  }
+  if (f.SMRCompliance) html += '<div class="row"><span class="label">Signing Party Designation (SMR)</span><span class="value">' + f.SMRCompliance.toUpperCase() + '</span></div>';
+  html += '</div>';
+  return html;
+})()}
 
 <div class="section">
   <div class="sec-title">결재 이력</div>
