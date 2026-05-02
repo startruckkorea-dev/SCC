@@ -862,7 +862,8 @@ async function showConfirmWithData(apprId, action, reqId) {
     ]);
     const role = aprData.fields.ApproverRole || '';
     // ContractTemplate 필드 - 여러 가능한 필드명 시도
-    const tmpl = reqData.fields.ContractTemplate || reqData.fields.Contract_x0020_Template || '';
+    const rawTmpl = reqData.fields.ContractTemplate || reqData.fields.Contract_x0020_Template || '';
+    const tmpl = rawTmpl.replace(/<[^>]*>/g, '').trim(); // HTML 태그 제거
     console.log('[CL-debug] reqData fields keys:', Object.keys(reqData.fields).filter(k=>k.toLowerCase().includes('tmpl')||k.toLowerCase().includes('template')||k.toLowerCase().includes('contract')));
     console.log('[CL-debug] tmpl value:', tmpl);
     showConfirm(apprId, action, reqId, role, tmpl);
@@ -893,8 +894,9 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
   clEl.innerHTML = '';
   if (!isReject) {
     const role = apprRole || '';
-    const isNonStd = (contractType||'').toLowerCase().includes('non-standard');
-    console.log('[CL] role=', apprRole, 'tmpl=', contractType, 'isNonStd=', isNonStd);
+    const cleanType = (contractType||'').replace(/<[^>]*>/g,'');
+    const isNonStd = cleanType.toLowerCase().includes('non-standard');
+    console.log('[CL] role=', apprRole, 'isNonStd=', isNonStd);
     let clHtml = '';
     const row = (label, name, opts, indent=false) => `
       <div style="margin:${indent?'2px 0 6px 16px':'6px 0'};font-size:.75rem">
@@ -1865,7 +1867,10 @@ async function submitForm() {
         const txt = label.textContent.trim().replace(/\s+/g,' ');
         // Other template title 포함
         const textInput = label.querySelector('input[type="text"]');
-        tmplSub.push(textInput && textInput.value ? txt + textInput.value : txt);
+        // "Other standard template ( title: )" 처리: 괄호/공백 정리
+        let subTxt = txt.replace(/\(\s*title:\s*\)\s*$/, '').replace(/\(&nbsp;\)\s*$/, '').trim();
+        if (textInput && textInput.value.trim()) subTxt += ' ' + textInput.value.trim();
+        tmplSub.push(subTxt);
       }
     });
     const tmplChecked = [...tmplMain, ...tmplSub];
