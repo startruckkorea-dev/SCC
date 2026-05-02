@@ -1137,16 +1137,27 @@ async function printApprovalDoc(reqId) {
     ${aprs.map(a => {
       const af = a.fields;
       const dateStr = af.ApprovalDate ? af.ApprovalDate.substring(0,16).replace('T',' ') : '-';
-      const commentOnly = (af.Comment||'').indexOf('[체크리스트]') >= 0
-        ? (af.Comment||'').substring((af.Comment||'').indexOf('\n\n') + 2).trim()
-        : (af.Comment||'');
+      // SharePoint HTML wrapper 제거 (DOMParser 사용)
+      const _rawCmt = af.Comment || '';
+      const _cleanCmt = (() => {
+        try {
+          const dp = new DOMParser();
+          const doc = dp.parseFromString(_rawCmt, 'text/html');
+          return doc.body.textContent || '';
+        } catch(e) {
+          return _rawCmt.replace(/<[^>]*>/g,'');
+        }
+      })().trim();
+      const commentOnly = _cleanCmt.indexOf('[체크리스트]') >= 0
+        ? _cleanCmt.substring(_cleanCmt.indexOf('\n\n', _cleanCmt.indexOf('[체크리스트]')) + 2).trim()
+        : _cleanCmt;
       return '<tr>' +
         '<td>' + (af.ApprovalOrder||'') + '차</td>' +
         '<td>' + (af.ApproverRole||'') + '</td>' +
         '<td>' + (af.ApproverName||'') + '</td>' +
         '<td>' + dateStr + '</td>' +
         '<td><span class="badge badge-' + (af.Status||'대기') + '">' + (af.Status||'-') + '</span></td>' +
-        '<td style="max-width:120px;word-break:break-word;font-size:9px">' + (commentOnly||'').replace(/<div[^>]*>/gi,'').replace(/<\/div>/gi,'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/\[체크리스트\]/g,'[체크]').trim() + '</td>' +
+        '<td style="max-width:120px;word-break:break-word;font-size:9px">' + (commentOnly||'') + '</td>' +
         '</tr>';
     }).join('')}
   </table>
