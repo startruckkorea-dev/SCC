@@ -1879,6 +1879,7 @@ async function submitForm() {
       }
     });
     const tmplChecked = [...tmplMain, ...tmplSub];
+    console.log('[TMPL save]', JSON.stringify(tmplChecked));
     // Compliance 수집
     const bizVal    = document.querySelector('input[name="biz"]:checked')?.value || '';
     const ddVal     = document.querySelector('input[name="dd"]:checked')?.value || '';
