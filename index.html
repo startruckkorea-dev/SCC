@@ -1718,7 +1718,7 @@ async function exportAdminExcel() {
           row.push(a.ApproverName || '');
           row.push(a.ApproverEmail || '');
           row.push(a.Status || '');
-          row.push(a.ActionDate ? a.ActionDate.substring(0,16).replace('T',' ') : '');
+          row.push(a.ApprovalDate ? a.ApprovalDate.substring(0,16).replace('T',' ') : '');
           row.push(cleanComment(a.Comment || ''));
         } else {
           row.push('','','','','','');
