@@ -1054,8 +1054,12 @@ async function confirmApproval() {
   window._detailModalWasOpen = false;
   closeConfirm();
   document.getElementById('detail-modal').classList.remove('show');
-  // Comment HTML 태그 제거 후 저장
-  comment = (comment||'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();
+  // Comment HTML 태그 및 SharePoint ExternalClass wrapper 완전 제거
+  function stripHtml(s) {
+    return (s||'').replace(/<div[^>]*>/gi,'').replace(/<\/div>/gi,'').replace(/<[^>]*>/g,'')
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
+  }
+  comment = stripHtml(comment);
   await processApproval(apprId, action, reqId, comment, checklistData);
   // 통합결재함이 열려있으면 목록 새로고침
   const uniModal = document.getElementById('unified-modal');
@@ -1644,7 +1648,11 @@ async function showDetail(reqId) {
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
               (() => {
-              const raw = (af.Comment || '').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();
+              const raw = (() => {
+                const s = af.Comment || '';
+                return s.replace(/<div[^>]*>/gi,'').replace(/<\/div>/gi,'').replace(/<[^>]*>/g,'')
+                  .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
+              })();
               const apprIdStr = String(af.id || '');
               // SharePoint에서 로드한 체크리스트 응답 찾기
               const clResp = clResponses.find(r => String(r.fields.ApprovalID) === apprIdStr);
@@ -1663,7 +1671,14 @@ async function showDetail(reqId) {
                   '</div></div>';
               }
               // 일반 코멘트 (체크리스트 제외)
-              const noteOnly = raw.indexOf('[체크리스트]') >= 0 ? raw.substring(raw.indexOf('\n\n', raw.indexOf('[체크리스트]')) + 2).trim() : raw.trim();
+              // [체크리스트] 뒤 실제 코멘트만 추출
+              let noteOnly = '';
+              if (raw.indexOf('[체크리스트]') >= 0) {
+                const nnIdx = raw.indexOf('\n\n', raw.indexOf('[체크리스트]'));
+                noteOnly = nnIdx >= 0 ? raw.substring(nnIdx + 2).trim() : '';
+              } else {
+                noteOnly = raw.trim();
+              }
               if (noteOnly) html += '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + noteOnly + '</div>';
               return html;
             })() +
@@ -1744,6 +1759,7 @@ async function showDetail(reqId) {
         const mp = window._pendingApproverBtn;
         const rd = window._pendingReqData;
         const isChopSign = (rd && rd.fields && (rd.fields.FinalSignOff||'').toLowerCase().includes('chop'));
+        console.log('[PRINT] FinalSignOff=', rd?.fields?.FinalSignOff, 'isChop=', isChopSign);
         const printBtnHtml = isChopSign
           ? '<button onclick="printApprovalDoc(' + reqId + ')" style="border:1px solid #0078d4;background:#fff;color:#0078d4;border-radius:6px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button> '
           : '';
