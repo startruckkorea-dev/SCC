@@ -1482,10 +1482,14 @@ async function showDetail(reqId) {
     // ── 3. Contract Template ──
     if (f.ContractTemplate) {
       html += sec('3. Contract Template');
-      const tmplItems = (f.ContractTemplate || '').split(';').map(s => s.trim()).filter(Boolean);
+      // HTML 태그 제거 후 파싱
+      const rawTmplDisp = (f.ContractTemplate || '').replace(/<[^>]*>/g, '').trim();
+      const tmplItems = rawTmplDisp.split(';')
+        .map(s => s.trim())
+        .filter(s => s && s !== ')' && s !== '(' && s.length > 1);
       const tmplHtml = tmplItems.map(item =>
         '<div style="padding:3px 0;font-size:13px;display:flex;align-items:flex-start;gap:6px">' +
-        '<span style="color:#0078d4;flex-shrink:0">✓</span><span>' + item + '</span></div>'
+        '<span style="color:#107c10;flex-shrink:0">✓</span><span>' + item + '</span></div>'
       ).join('');
       html += '<div style="padding:6px 0">' + (tmplHtml || '-') + '</div>';
     }
