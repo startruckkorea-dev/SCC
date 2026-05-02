@@ -1148,9 +1148,16 @@ async function printApprovalDoc(reqId) {
           return _rawCmt.replace(/<[^>]*>/g,'');
         }
       })().trim();
-      const commentOnly = _cleanCmt.indexOf('[체크리스트]') >= 0
-        ? _cleanCmt.substring(_cleanCmt.indexOf('\n\n', _cleanCmt.indexOf('[체크리스트]')) + 2).trim()
-        : _cleanCmt;
+      // [체크리스트] 블록 전체 제거, 순수 의견만 추출
+      let commentOnly = '';
+      if (_cleanCmt.indexOf('[체크리스트]') >= 0) {
+        const nnIdx = _cleanCmt.indexOf('\n\n', _cleanCmt.indexOf('[체크리스트]'));
+        commentOnly = nnIdx >= 0 ? _cleanCmt.substring(nnIdx + 2).trim() : '';
+      } else {
+        // 혹시 '[체크리스트]' 없이 체크리스트 내용만 있는 경우 (구버전) 필터
+        const hasCheckbox = _cleanCmt.includes('☐') || _cleanCmt.includes('☑') || _cleanCmt.startsWith('→');
+        commentOnly = hasCheckbox ? '' : _cleanCmt;
+      }
       return '<tr>' +
         '<td>' + (af.ApprovalOrder||'') + '차</td>' +
         '<td>' + (af.ApproverRole||'') + '</td>' +
