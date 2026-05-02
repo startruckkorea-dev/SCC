@@ -1484,6 +1484,7 @@ async function showDetail(reqId) {
       html += sec('3. Contract Template');
       // HTML 태그 제거 후 파싱
       const rawTmplDisp = (f.ContractTemplate || '').replace(/<[^>]*>/g, '').trim();
+      console.log('[TMPL raw]', JSON.stringify(rawTmplDisp));
       const tmplItems = rawTmplDisp.split(';')
         .map(s => s.trim())
         .filter(s => s && s !== ')' && s !== '(' && s.length > 1);
