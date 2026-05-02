@@ -1567,7 +1567,6 @@ async function exportAdminExcel() {
   // 결재 이력 일괄 조회
   loading(true, '📊 Excel 생성 중...', '결재 이력 조회 중입니다. 잠시만 기다려주세요.');
   try {
-    const t = await getToken();
     const apprAll = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999');
     const apprMap = {};
     (apprAll.value || []).forEach(a => {
