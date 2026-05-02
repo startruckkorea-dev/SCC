@@ -1146,13 +1146,13 @@ async function printApprovalDoc(reqId) {
         '<td>' + (af.ApproverName||'') + '</td>' +
         '<td>' + dateStr + '</td>' +
         '<td><span class="badge badge-' + (af.Status||'대기') + '">' + (af.Status||'-') + '</span></td>' +
-        '<td style="max-width:120px;word-break:break-word">' + (commentOnly||'') + '</td>' +
+        '<td style="max-width:120px;word-break:break-word;font-size:9px">' + (commentOnly||'').replace(/<div[^>]*>/gi,'').replace(/<\/div>/gi,'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/\[체크리스트\]/g,'[체크]').trim() + '</td>' +
         '</tr>';
     }).join('')}
   </table>
 </div>
 
-<div class="footer">STK Korea · STK Contract Checklist System · Contract #${reqId} · ${nowStr}</div>
+<div class="footer">STK · STK Contract Checklist System · Contract #${reqId} · ${nowStr}</div>
 </body></html>`;
 
     // 새 창에서 출력
