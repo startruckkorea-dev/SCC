@@ -1759,24 +1759,15 @@ async function showDetail(reqId) {
     // 승인/반려 버튼 action-bar 렌더링 (innerHTML 세팅 후)
     const actionBar = document.getElementById('modal-action-bar');
     if (actionBar) {
-      const rd = window._pendingReqData;
-      const isChopSign = (rd && rd.fields && (rd.fields.FinalSignOff||'').toLowerCase().includes('chop'));
       const mp = window._pendingApproverBtn;
-      const printBtnHtml = isChopSign
-        ? '<button onclick="printApprovalDoc(' + reqId + ')" style="border:1px solid #0078d4;background:#fff;color:#0078d4;border-radius:6px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button> '
-        : '';
+      const printBtnHtml = '<button onclick="printApprovalDoc(' + reqId + ')" style="border:1px solid #0078d4;background:#fff;color:#0078d4;border-radius:6px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button> ';
+      actionBar.style.display = 'flex';
       if (mp) {
-        actionBar.style.display = 'flex';
         actionBar.innerHTML = printBtnHtml +
           '<button onclick="showConfirmWithData(' + mp.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">✅ 승인</button>' +
           '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">❌ 반려</button>';
-      } else if (printBtnHtml) {
-        // 결재자 없어도 chop이면 출력 버튼만 표시
-        actionBar.style.display = 'flex';
-        actionBar.innerHTML = printBtnHtml;
       } else {
-        actionBar.style.display = 'none';
-        actionBar.innerHTML = '';
+        actionBar.innerHTML = printBtnHtml;
       }
     }
 
