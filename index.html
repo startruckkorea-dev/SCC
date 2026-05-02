@@ -1869,7 +1869,7 @@ async function submitForm() {
         const textInput = label.querySelector('input[type="text"]');
         // "Other standard template ( title: )" 처리: 괄호/공백 정리
         let subTxt = txt.replace(/\(\s*title:\s*\)\s*$/, '').replace(/\(&nbsp;\)\s*$/, '').trim();
-        if (textInput && textInput.value.trim()) subTxt += ' ' + textInput.value.trim();
+        if (textInput && textInput.value.trim()) subTxt += ' ( title: ' + textInput.value.trim() + ' )';
         tmplSub.push(subTxt);
       }
     });
