@@ -131,6 +131,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 /* List table */
 #tab-admin .list-table { min-width: 1200px; overflow-x: auto; }
+#app.admin-wide { max-width: 1400px; }
 .list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .list-table th { background: #f3f2f1; padding: 10px 12px; text-align: left; font-weight: 600; color: #323130; border-bottom: 2px solid #edebe9; font-size: 12px; }
 .list-table td { padding: 10px 12px; border-bottom: 1px solid #edebe9; color: #323130; font-size: 13px; }
@@ -799,6 +800,7 @@ function switchTab(name) {
     const btn = document.getElementById('tab-' + t + '-btn');
     if (btn) btn.classList.toggle('active', t === name);
   });
+  document.getElementById('app').classList.toggle('admin-wide', name === 'admin');
   if (name === 'list')     loadMyList();
   if (name === 'approval') loadApprovalQueue();
   if (name === 'admin')    { allContractsCache = []; loadAdminList(); }
