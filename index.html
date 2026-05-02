@@ -1622,11 +1622,52 @@ async function exportAdminExcel() {
       const aprs = (apprMap[String(item.id)] || []).sort((a,b) => (a.ApprovalOrder||0)-(b.ApprovalOrder||0));
       const hash = hashMap[String(item.id)] || '';
 
+      // HTML 엔티티 + 태그 제거 헬퍼
+      function cleanHtml(val) {
+        if (!val) return '';
+        return val
+          .replace(/<[^>]*>/g, '')          // HTML 태그 제거
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&#58;/g, ':')
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .trim();
+      }
+
+      // Comment 정리 헬퍼 (체크리스트 기호 + 엔티티 정리)
+      function cleanComment(raw) {
+        if (!raw) return '';
+        let s = cleanHtml(raw);
+        // 체크리스트 파트 정리
+        const clIdx = s.indexOf('[체크리스트]');
+        if (clIdx >= 0) {
+          s = s.substring(clIdx + 7).trim();
+        }
+        // 줄바꿈 기준 분리 후 번호 재정렬
+        const lines = s.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+        const cleaned = lines.map((l, idx) => {
+          return l
+            .replace(/^[✓✔☑☐]\s*/, '')   // 체크박스 기호 제거
+            .replace(/^→\s*/, '  → ')      // 화살표 들여쓰기 유지
+            .replace(/^\d+\.\s*/, '');    // 기존 번호 제거
+        }).filter(l => l.length > 0);
+        // 번호 다시 붙이기 (→ 로 시작하는 건 번호 없이 유지)
+        let num = 0;
+        return cleaned.map(l => {
+          if (l.startsWith('  → ')) return l;
+          num++;
+          return num + '. ' + l;
+        }).join(' / ');
+      }
+
       // 첨부파일 목록 파싱
       let fileList = '-';
       if (f.AttachedFiles) {
         try {
-          const cleaned = f.AttachedFiles.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
+          const cleaned = cleanHtml(f.AttachedFiles);
           const entries = cleaned.split(';').filter(e => e.trim());
           const names = entries.map(e => {
             const parts = e.split('||');
@@ -1650,14 +1691,14 @@ async function exportAdminExcel() {
         f.ContractCompanyType || '',
         f.ContractType || '',
         f.ContractPartner || '',
-        f.Objective || '',
+        cleanHtml(f.Objective || ''),
         f.ContractValue || '',
         f.Currency || '',
         periodType,
         periodStart,
         periodEnd,
         f.PaymentDays || '',
-        (f.ContractTemplate || '').replace(/<[^>]*>/g,'').replace(/\n/g,' '),
+        cleanHtml(f.ContractTemplate || '').replace(/\n/g,' '),
         f.BizTermsReviewed || '',
         f.DDPerformed || '',
         f.DDId || '',
@@ -1673,20 +1714,12 @@ async function exportAdminExcel() {
       for (let i = 0; i < maxAppr; i++) {
         const a = aprs[i];
         if (a) {
-          // Comment에서 체크리스트 정리
-          const rawCmt = (a.Comment || '').replace(/<[^>]*>/g, '').trim();
-          const clIdx = rawCmt.indexOf('[체크리스트]');
-          let comment = rawCmt;
-          if (clIdx >= 0) {
-            const clPart = rawCmt.substring(clIdx + 7).trim();
-            comment = clPart.split('\n').map((l,idx) => (idx+1) + '. ' + l.replace(/^✓\s*/,'')).join(' / ');
-          }
           row.push(a.ApproverRole || '');
           row.push(a.ApproverName || '');
           row.push(a.ApproverEmail || '');
           row.push(a.Status || '');
           row.push(a.ActionDate ? a.ActionDate.substring(0,16).replace('T',' ') : '');
-          row.push(comment);
+          row.push(cleanComment(a.Comment || ''));
         } else {
           row.push('','','','','','');
         }
