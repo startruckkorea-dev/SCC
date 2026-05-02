@@ -1483,7 +1483,12 @@ async function showDetail(reqId) {
     if (f.ContractTemplate) {
       html += sec('3. Contract Template');
       // HTML 태그 제거 후 파싱
-      const rawTmplDisp = (f.ContractTemplate || '').replace(/<[^>]*>/g, '').trim();
+      const rawTmplDisp = (f.ContractTemplate || '')
+        .replace(/<[^>]*>/g, '')  // HTML 태그 제거
+        .replace(/&#58;/g, ':')   // : 디코딩
+        .replace(/&#59;/g, ';')   // ; 디코딩 (혹시 있을 경우)
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+        .trim();
       console.log('[TMPL raw]', JSON.stringify(rawTmplDisp));
       const tmplItems = rawTmplDisp.split(';')
         .map(s => s.trim())
