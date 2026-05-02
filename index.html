@@ -1659,6 +1659,9 @@ async function showDetail(reqId) {
               let html = '';
               if (clResp && clResp.fields.ChecklistSummary) {
                 const lines = clResp.fields.ChecklistSummary.replace('[체크리스트]','').trim().split('\n').filter(l=>l.trim());
+                // 체크된 항목이나 라디오 선택이 하나라도 있을 때만 표시
+                const hasContent = lines.some(l => l.includes('☑') || l.trim().startsWith('→') || l.trim().startsWith('Comment'));
+                if (hasContent)
                 html += '<div style="margin-top:6px;background:#f0f6ff;border:1px solid #c7e0f4;border-radius:8px;overflow:hidden">' +
                   '<div style="background:#e8f0fe;padding:5px 10px;font-size:11px;font-weight:700;color:#1e40af">📋 체크리스트</div>' +
                   '<div style="padding:6px 10px;display:flex;flex-direction:column;gap:2px">' +
@@ -1688,7 +1691,8 @@ async function showDetail(reqId) {
         const reqStatus = (reqData.fields.Status||'').trim();
         const myPending = reqStatus === '처리중' ? null :
           apprList.find(a => (a.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && (a.fields.Status||'').trim() === '대기');
-        if (myPending) { window._pendingApproverBtn = myPending; window._pendingReqData = reqData; }
+        window._pendingReqData = reqData; // 항상 저장 (출력 버튼용)
+        if (myPending) { window._pendingApproverBtn = myPending; }
         else { window._pendingApproverBtn = null; }
       }
     } catch(e) {}
@@ -1755,18 +1759,21 @@ async function showDetail(reqId) {
     // 승인/반려 버튼 action-bar 렌더링 (innerHTML 세팅 후)
     const actionBar = document.getElementById('modal-action-bar');
     if (actionBar) {
-      if (window._pendingApproverBtn) {
-        const mp = window._pendingApproverBtn;
-        const rd = window._pendingReqData;
-        const isChopSign = (rd && rd.fields && (rd.fields.FinalSignOff||'').toLowerCase().includes('chop'));
-        console.log('[PRINT] FinalSignOff=', rd?.fields?.FinalSignOff, 'isChop=', isChopSign);
-        const printBtnHtml = isChopSign
-          ? '<button onclick="printApprovalDoc(' + reqId + ')" style="border:1px solid #0078d4;background:#fff;color:#0078d4;border-radius:6px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button> '
-          : '';
+      const rd = window._pendingReqData;
+      const isChopSign = (rd && rd.fields && (rd.fields.FinalSignOff||'').toLowerCase().includes('chop'));
+      const mp = window._pendingApproverBtn;
+      const printBtnHtml = isChopSign
+        ? '<button onclick="printApprovalDoc(' + reqId + ')" style="border:1px solid #0078d4;background:#fff;color:#0078d4;border-radius:6px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button> '
+        : '';
+      if (mp) {
         actionBar.style.display = 'flex';
         actionBar.innerHTML = printBtnHtml +
           '<button onclick="showConfirmWithData(' + mp.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">✅ 승인</button>' +
           '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">❌ 반려</button>';
+      } else if (printBtnHtml) {
+        // 결재자 없어도 chop이면 출력 버튼만 표시
+        actionBar.style.display = 'flex';
+        actionBar.innerHTML = printBtnHtml;
       } else {
         actionBar.style.display = 'none';
         actionBar.innerHTML = '';
