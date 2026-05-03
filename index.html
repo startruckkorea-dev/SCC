@@ -757,15 +757,15 @@ async function boot(account) {
     // system_config.xlsx 로드 후 설정 반영
     const _cfg = await loadSystemConfig();
     if (_cfg) {
-      const _contact = cfgVal(_cfg,'CONTACT_EMAIL',{email:'hye-jin.yun@hyosung.com'});
+      const _contact = cfgVal(_cfg,'SCC_CONTACT',cfgVal(_cfg,'CONTACT_EMAIL',{email:'hye-jin.yun@hyosung.com'}));
       document.querySelectorAll('.subtitle').forEach(el=>{if(el.textContent.includes('@'))el.textContent='관련 문의 Email: '+_contact.email;});
-      const _adminList = cfgEmails(_cfg,['ADMIN_1','ADMIN_2','ADMIN_3','ADMIN_4','ADMIN_SP']);
+      const _adminList = cfgEmails(_cfg,['SCC_ADMIN_1','ADMIN_SP']);
       if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
       Object.assign(A3,  cfgVal(_cfg,'SCC_COMPLIANCE', A3));
       Object.assign(A4S, cfgVal(_cfg,'SCC_CONTROLLING',A4S));
       Object.assign(A5,  cfgVal(_cfg,'SCC_ACCOUNTING', A5));
-      Object.assign(A6,  cfgVal(_cfg,'SCC_CFO',        A6));
-      Object.assign(A7,  cfgVal(_cfg,'SCC_CEO',        A7));
+      Object.assign(A6,  cfgVal(_cfg,'SCC_CFO', A6));
+      Object.assign(A7,  cfgVal(_cfg,'SCC_CEO', A7));
       Object.assign(ARD, cfgVal(_cfg,'SCC_RD',         ARD));
     }
     await loadEmployees();
