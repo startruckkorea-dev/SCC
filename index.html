@@ -527,8 +527,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block">
         <div class="appr-title">3차 결재자 <span class="hint">— Legal &amp; Compliance (자동 지정)</span></div>
         <div class="appr-info">
-          <input type="text"  value="Junsoon Lee (TEST)" readonly>
-          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+          <input type="text"  id="cfg-a3-name"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" id="cfg-a3-email" value="jimmy.lee@hyosung.com" readonly>
         </div>
       </div>
 
@@ -536,8 +536,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block" id="appr-block-jungho" style="display:none;border:1px solid #bfdbfe;background:#eff6ff">
         <div class="appr-title" style="color:#1d4ed8">4차 결재자 <span class="hint">— Controlling 팀장 (Sales Type 자동 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  value="Junsoon Lee (TEST)" readonly>
-          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+          <input type="text"  id="cfg-a4s-name"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" id="cfg-a4s-email" value="jimmy.lee@hyosung.com" readonly>
         </div>
       </div>
 
@@ -545,8 +545,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block" id="appr-block-acct">
         <div class="appr-title" id="appr-acct-title">4차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span></div>
         <div class="appr-info">
-          <input type="text"  value="Junsoon Lee (TEST)" readonly>
-          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+          <input type="text"  id="cfg-a5-name"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" id="cfg-a5-email" value="jimmy.lee@hyosung.com" readonly>
         </div>
       </div>
 
@@ -554,8 +554,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block" id="appr-block-5" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
         <div class="appr-title" style="color:#b45309" id="appr-cfo-title">5차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  value="Junsoon Lee (TEST)" readonly>
-          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+          <input type="text"  id="cfg-a6-name"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" id="cfg-a6-email" value="jimmy.lee@hyosung.com" readonly>
         </div>
       </div>
 
@@ -563,8 +563,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block" id="appr-block-6" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
         <div class="appr-title" style="color:#b45309" id="appr-ceo-title">6차 결재자 <span class="hint">— CEO (Final signing off 조건 충족 시 자동 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  value="Junsoon Lee (TEST)" readonly>
-          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+          <input type="text"  id="cfg-a7-name"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" id="cfg-a7-email" value="jimmy.lee@hyosung.com" readonly>
         </div>
       </div>
 
@@ -572,8 +572,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block" id="appr-block-rd" style="display:none;border:1px solid #fecaca;background:#fff5f5">
         <div class="appr-title" style="color:#b91c1c" id="appr-rd-title">최종 결재자 <span class="hint">— RD (Final signing off 조건 충족 시 자동 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  value="Junsoon Lee (TEST)" readonly>
-          <input type="email" value="jimmy.lee@hyosung.com" readonly>
+          <input type="text"  id="cfg-ard-name"  value="Junsoon Lee (TEST)" readonly>
+          <input type="email" id="cfg-ard-email" value="jimmy.lee@hyosung.com" readonly>
         </div>
       </div>
 
@@ -767,6 +767,14 @@ async function boot(account) {
       Object.assign(A6,  cfgVal(_cfg,'SCC_CFO', A6));
       Object.assign(A7,  cfgVal(_cfg,'SCC_CEO', A7));
       Object.assign(ARD, cfgVal(_cfg,'SCC_RD',         ARD));
+      // 신청서 결재자 UI 즉시 반영
+      [['cfg-a3-name',A3.name],['cfg-a3-email',A3.email],
+       ['cfg-a4s-name',A4S.name],['cfg-a4s-email',A4S.email],
+       ['cfg-a5-name',A5.name],['cfg-a5-email',A5.email],
+       ['cfg-a6-name',A6.name],['cfg-a6-email',A6.email],
+       ['cfg-a7-name',A7.name],['cfg-a7-email',A7.email],
+       ['cfg-ard-name',ARD.name],['cfg-ard-email',ARD.email],
+      ].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
     }
     await loadEmployees();
     await checkApprovalBadge();
