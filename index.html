@@ -295,7 +295,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <div class="header">
     <div class="header-left">
       <div class="title">STK Contract Checklist</div>
-      <div class="subtitle">관련 문의 Email: hye-jin.yun@hyosung.com</div>
+      <div class="subtitle" id="scc-contact-email">관련 문의 Email: hye-jin.yun@hyosung.com</div>
     </div>
     <div class="user-info" style="flex-direction:column;align-items:flex-end;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
@@ -758,7 +758,8 @@ async function boot(account) {
     const _cfg = await loadSystemConfig();
     if (_cfg) {
       const _contact = cfgVal(_cfg,'SCC_CONTACT',cfgVal(_cfg,'CONTACT_EMAIL',{email:'hye-jin.yun@hyosung.com'}));
-      document.querySelectorAll('.subtitle').forEach(el=>{if(el.textContent.includes('@'))el.textContent='관련 문의 Email: '+_contact.email;});
+      const _sccContactEl = document.getElementById('scc-contact-email');
+      if(_sccContactEl) _sccContactEl.textContent='관련 문의 Email: '+_contact.email;
       const _adminList = cfgEmails(_cfg,['SCC_ADMIN_1','ADMIN_SP']);
       if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
       Object.assign(A3,  cfgVal(_cfg,'SCC_COMPLIANCE', A3));
