@@ -1216,7 +1216,10 @@ async function printApprovalDoc(reqId) {
 ${(()=>{
   const tmpl = (f.ContractTemplate||'').replace(/<[^>]*>/g,'').replace(/&#58;/g,':').replace(/&amp;/g,'&').trim();
   if (!tmpl) return '';
-  const lines = tmpl.split(';').map(l=>l.trim()).filter(Boolean);
+  let lines = tmpl.split(';').map(l=>l.trim()).filter(Boolean);
+  // Government template 항상 맨 아래
+  const govLine = lines.filter(l=>l==='Government template');
+  lines = [...lines.filter(l=>l!=='Government template'), ...govLine];
   return '<div class="section"><div class="sec-title">3. Contract Template</div>' +
     lines.map(l=>'<div class="row"><span class="label" style="min-width:8px">✓</span><span class="value">' + l + '</span></div>').join('') +
     '</div>';
@@ -2358,7 +2361,10 @@ async function submitForm() {
         tmplSub.push(subTxt);
       }
     });
-    const tmplChecked = [...tmplMain, ...tmplSub];
+    // Government template은 항상 맨 마지막에 위치
+    const govIdx = tmplMain.indexOf('Government template');
+    if (govIdx > -1) tmplMain.splice(govIdx, 1);
+    const tmplChecked = [...tmplMain, ...tmplSub, ...(govIdx > -1 ? ['Government template'] : [])];
     console.log('[TMPL save]', JSON.stringify(tmplChecked));
     // Compliance 수집
     const bizVal    = document.querySelector('input[name="biz"]:checked')?.value || '';
