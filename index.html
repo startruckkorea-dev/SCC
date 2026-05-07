@@ -2343,7 +2343,7 @@ async function submitForm() {
   // validation 통과 후 버튼 disable
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '제출 중...'; submitBtn.style.background = '#a0aec0'; }
 
-  loading(true);
+  loading(true, '📄 계약서 제출 중...', '파일 업로드 및 결재 요청을 처리하고 있습니다. 잠시만 기다려주세요.');
   try {
     const now = new Date().toISOString();
     const periodType = ['chk-lim','chk-auto','chk-noend'].filter(id => document.getElementById(id).checked)
@@ -2560,7 +2560,15 @@ function fppReset() {
   if(bar) bar.style.width='0%';
   fppMsg(' ');
 }
-function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
+function loading(v, title='처리 중...', sub='') {
+  const el = document.getElementById('loading');
+  if (!el) return;
+  el.style.display = v ? 'flex' : 'none';
+  const t = document.getElementById('loading-title');
+  const s = document.getElementById('loading-sub');
+  if (t) t.textContent = title;
+  if (s) s.textContent = sub;
+}
 function showLoginError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 
 // ── MSAL Init ──
