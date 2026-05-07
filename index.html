@@ -1975,7 +1975,10 @@ async function showDetail(reqId) {
         html += row('Is Compliance Due Diligence performed?', yn(f.DDPerformed) + ddDetail);
       }
       if (f.PersonalInfo) {
-        const stdDetail = f.StdContract ? ' &nbsp;→&nbsp; Standard contract: ' + yn(f.StdContract.split(' ')[0]) : '';
+        const stdRaw = f.StdContract || '';
+        const stdVal = stdRaw.split(' ')[0]; // 'yes' or 'no'
+        const stdNote = stdRaw.match(/\(No reason:\s*(.+?)\)$/);
+        const stdDetail = stdRaw ? ' &nbsp;→&nbsp; Standard contract: ' + yn(stdVal) + (stdNote ? ' &nbsp;( ' + stdNote[1] + ' )' : '') : '';
         html += row('Is personal Information disclosed?', yn(f.PersonalInfo) + stdDetail);
       }
       html += row('Signing Party Designation (SMR)', yn(f.SMRCompliance));
