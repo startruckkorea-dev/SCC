@@ -2394,7 +2394,7 @@ async function submitForm() {
     });
 
     const fields = {
-      Title: document.getElementById('f-title').value.trim(),
+      Title: 'SCC-tmp',
       ContractCompanyType: document.getElementById('sel-type').value,
       ContractPartner: document.getElementById('f-partner').value.trim(),
       Objective: document.getElementById('f-objective').value.trim(),
@@ -2420,6 +2420,7 @@ async function submitForm() {
 
     const item = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', { fields });
     const reqId = parseInt(item.id);
+    await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: 'SCC-' + new Date().toISOString().slice(0,10) + '-' + reqId } });
 
     // ── 파일 업로드 → AttachedFiles/SCC_Requests_AttachedFiles/{reqId}/
     const fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
