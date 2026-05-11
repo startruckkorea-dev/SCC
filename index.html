@@ -862,7 +862,7 @@ async function checkApprovalBadge() {
   try {
     const data = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
     const mine = data.value.filter(i =>
-      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
+      ((i.fields.ApproverEmail||'').toLowerCase() === (user.email||'').toLowerCase() || (i.fields.ApproverEmail||'').toLowerCase() === (user.username||'').toLowerCase()) && (i.fields.Status||'').trim() === '대기'
     );
     const badge = document.getElementById('appr-badge');
     if (mine.length) { badge.textContent = mine.length; badge.style.display = 'inline'; }
@@ -919,14 +919,23 @@ async function loadApprovalQueue() {
     ]);
     const reqMap = {};
     reqData.value.forEach(function(r){ reqMap[r.id] = r.fields; });
+    const myEmailAlt = (user.username||'').toLowerCase(); // MSAL username = email
+    console.log('[결재함] 내 이메일:', myEmail, '| alt:', myEmailAlt);
+    console.log('[결재함] 전체 결재자 수:', apprData.value.length);
+    // 이메일 매칭: email 또는 username 둘 다 비교
+    const matchEmail = (e) => {
+      const em = (e||'').toLowerCase();
+      return em === myEmail || em === myEmailAlt;
+    };
     let mine = apprData.value
-      .filter(function(i){ return (i.fields.ApproverEmail||'').toLowerCase() === myEmail && (i.fields.Status||'').trim() === '대기'; })
+      .filter(function(i){ return matchEmail(i.fields.ApproverEmail) && (i.fields.Status||'').trim() === '대기'; })
       .sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
+    console.log('[결재함] 내 대기 항목:', mine.length);
     // 페이지네이션 처리 (500건 초과 시)
     let nextLink = apprData['@odata.nextLink'];
     while(nextLink) {
       const more = await api(nextLink.replace('https://graph.microsoft.com/v1.0',''));
-      more.value.filter(i=>(i.fields.ApproverEmail||'').toLowerCase()===myEmail&&(i.fields.Status||'').trim()==='대기')
+      more.value.filter(i=>matchEmail(i.fields.ApproverEmail)&&(i.fields.Status||'').trim()==='대기')
         .forEach(i=>mine.push(i));
       nextLink = more['@odata.nextLink']||null;
     }
