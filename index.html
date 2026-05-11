@@ -1105,7 +1105,7 @@ async function confirmApproval() {
       const lines = [];
       const clFields = {};
       const seenRadioGroups = new Set();
-      // DOM 순서대로 수집 (체크박스 → 그 다음 라디오 그룹 순)
+      // DOM 순서대로 수집 - 모든 항목 표시 (체크 여부 관계없이)
       clEl2.querySelectorAll('.cl-check, .cl-radio, input[type="text"]').forEach(el => {
         if (el.classList.contains('cl-check')) {
           const lbl = el.closest('label');
@@ -1117,28 +1117,26 @@ async function confirmApproval() {
           if (seenRadioGroups.has(el.name)) return;
           seenRadioGroups.add(el.name);
           const sel = clEl2.querySelector(`.cl-radio[name="${el.name}"]:checked`);
-          if (!sel && el.name !== 'ac_pt') return; // 미선택 라디오는 스킵 (ac_pt 제외)
-          // 질문 텍스트: 라디오 그룹을 감싼 div의 이전 형제 요소
+          // 미선택이어도 항상 표시
           const radioWrap = el.closest('div[style*="display:flex"]') || el.closest('div');
-          const parentDiv = radioWrap?.parentElement;
           const prevSib = radioWrap?.previousElementSibling;
           const q = prevSib ? prevSib.textContent.trim().replace(/\n.*/,'').trim() : el.name;
           const val = sel ? sel.value : '(미선택)';
           lines.push('  → ' + (el.name === 'ac_pt' ? 'Payment Term reviewed' : q) + ': ' + val);
           clFields[el.name] = val;
         } else if (el.type === 'text') {
-          if (!el.value.trim()) return;
-          if (el.id === 'co_comment') { lines.push('  Comment: ' + el.value.trim()); clFields['co_comment'] = el.value.trim(); }
-          else if (el.id === 'ct_comment') { lines.push('  Comment: ' + el.value.trim()); clFields['ct_comment'] = el.value.trim(); }
-          else if (el.id === 'tax_comment') { lines.push('  Tax risk comment: ' + el.value.trim()); clFields['tax_comment'] = el.value.trim(); }
+          // comment는 빈 값이어도 항상 포함
+          if (el.id === 'co_comment') { lines.push('  Comment: ' + (el.value.trim()||'-')); clFields['co_comment'] = el.value.trim(); }
+          else if (el.id === 'ct_comment') { lines.push('  Comment: ' + (el.value.trim()||'-')); clFields['ct_comment'] = el.value.trim(); }
+          else if (el.id === 'tax_comment') { if(el.value.trim()) { lines.push('  Tax risk comment: ' + el.value.trim()); clFields['tax_comment'] = el.value.trim(); } }
+          else if (el.value.trim()) { lines.push('  → ' + el.value.trim()); }
         }
       });
 
-      if (lines.length) {
-        const clSummary = '[체크리스트]\n' + lines.join('\n');
-        comment = comment ? clSummary + '\n\n' + comment : clSummary;
-        checklistData = { apprId, reqId, fields: clFields, summary: clSummary };
-      }
+      // 항목이 없어도 항상 체크리스트 저장 (빈 체크리스트도 기록)
+      const clSummary = '[체크리스트]\n' + (lines.length ? lines.join('\n') : '(항목 없음)');
+      comment = comment ? clSummary + '\n\n' + comment : clSummary;
+      checklistData = { apprId, reqId, fields: clFields, summary: clSummary };
     }
   }
   window._detailModalWasOpen = false;
