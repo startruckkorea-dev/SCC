@@ -914,9 +914,10 @@ async function loadApprovalQueue() {
   try {
     const myEmail = (user.email||user.username||'').toLowerCase();
     const [apprData, reqData] = await Promise.all([
-      api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500'),
-      api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500')
+      api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999&$orderby=Id desc'),
+      api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=999&$orderby=Id desc')
     ]);
+    console.log('[결재함] nextLink:', apprData['@odata.nextLink']?'있음':'없음');
     const reqMap = {};
     reqData.value.forEach(function(r){ reqMap[r.id] = r.fields; });
     const myEmailAlt = (user.username||'').toLowerCase(); // MSAL username = email
