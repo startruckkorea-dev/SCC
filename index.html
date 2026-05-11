@@ -945,16 +945,15 @@ async function showConfirmWithData(apprId, action, reqId) {
     const role = aprData.fields.ApproverRole || '';
     // ContractTemplate 필드 - 여러 가능한 필드명 시도
     const rawTmpl = reqData.fields.ContractTemplate || reqData.fields.Contract_x0020_Template || '';
-    const tmpl = rawTmpl.replace(/<[^>]*>/g, '').trim(); // HTML 태그 제거
-    console.log('[CL-debug] reqData fields keys:', Object.keys(reqData.fields).filter(k=>k.toLowerCase().includes('tmpl')||k.toLowerCase().includes('template')||k.toLowerCase().includes('contract')));
-    console.log('[CL-debug] tmpl value:', tmpl);
-    showConfirm(apprId, action, reqId, role, tmpl);
+    const tmpl = rawTmpl.replace(/<[^>]*>/g, '').trim();
+    const companyType = (reqData.fields.ContractCompanyType || '').trim(); // Sales / Non-Sales
+    showConfirm(apprId, action, reqId, role, tmpl, companyType);
   } catch(e) {
     console.error('showConfirmWithData error:', e);
     showConfirm(apprId, action, reqId);
   }
 }
-function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
+function showConfirm(apprId, action, reqId, apprRole='', contractType='', companyType='') {
   _pendingApproval = { apprId, action, reqId };
   const isReject = action === '반려';
   const detailModal = document.getElementById('detail-modal');
@@ -978,7 +977,9 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
     const role = apprRole || '';
     const cleanType = (contractType||'').replace(/<[^>]*>/g,'');
     const isNonStd = cleanType.toLowerCase().includes('non-standard');
-    console.log('[CL] role=', apprRole, 'isNonStd=', isNonStd);
+    const isNonSales = (companyType||'').toLowerCase().includes('non-sales');
+    const isNonStdNonSales = isNonStd && isNonSales;
+    console.log('[CL] role=', apprRole, 'isNonStd=', isNonStd, 'isNonSales=', isNonSales);
     let clHtml = '';
     const row = (label, name, opts, indent=false) => `
       <div style="margin:${indent?'2px 0 6px 16px':'6px 0'};font-size:.75rem">
@@ -1008,9 +1009,9 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
           ${row('Due Diligence is performed by RBO and valid','co_dd',['YES','NO','N/A'],true)}
           ${chk('co_3','Privacy Data Protection reviewed')}
           ${row('Appropriate clause is in place and the contract is in compliance with relevant laws and Mercedes-Benz Data Protection Policy','co_clause',['YES','NO','N/A'],true)}
-          ${isNonStd ? `
+          ${isNonStdNonSales ? `
           <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #c7d7f4;font-size:.73rem;color:#1e40af;font-weight:700;margin-bottom:4px">
-            📋 Non-Standard Template — Legal Review
+            📋 Non-Standard Template (Non-Sales) — Legal Review
           </div>
           ${chk('co_ns1','Non-Standard Template reviewed and approved by Legal')}
           <div style="margin-left:16px">
@@ -1042,7 +1043,7 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
 
     // ── Accounting ──
     if (role.includes('Accounting')) {
-      if (isNonStd) {
+      if (isNonStdNonSales) {
         clHtml += `<div style="margin-bottom:12px;border:1px solid #fed7aa;border-radius:8px;overflow:hidden">
           ${header('Accounting Department <span style="font-weight:400;font-size:.7rem">(For non-standard contract template only)</span>','#92400e','#fff7ed','#fed7aa')}
           ${wrap(`
