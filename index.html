@@ -1330,11 +1330,22 @@ async function processApproval(apprId, action, reqId, comment='', checklistData=
       await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
     } else {
       // 현재 reqId의 모든 결재자 조회
-      const all = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500');
-      // 현재 apprId는 방금 승인 처리됐으므로 강제로 '승인'으로 간주
+      // 해당 reqId의 결재자만 조회 (전체 조회 후 필터 방식 → 누락 방지)
+      const all = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=100');
       const thisReq = all.value
         .filter(i => Number(i.fields.RequestID) === Number(reqId))
         .map(i => String(i.id) === String(apprId) ? {...i, fields:{...i.fields, Status:'승인'}} : i);
+      // 혹시 100건 초과 시 추가 페이지 조회
+      if (all['@odata.nextLink']) {
+        let nextUrl = all['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0','');
+        while(nextUrl) {
+          const more = await api(nextUrl);
+          more.value.filter(i=>Number(i.fields.RequestID)===Number(reqId)).forEach(i=>{
+            thisReq.push(String(i.id)===String(apprId)?{...i,fields:{...i.fields,Status:'승인'}}:i);
+          });
+          nextUrl = more['@odata.nextLink']?.replace('https://graph.microsoft.com/v1.0','') || null;
+        }
+      }
 
       console.log('이 건 결재자 현황:', thisReq.map(i=>i.fields.ApprovalOrder+'차:'+i.fields.Status));
 
