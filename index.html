@@ -1002,12 +1002,22 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='') {
     // ── Compliance / Legal ──
     if (role.includes('Compliance') || role.includes('Legal')) {
       clHtml += `<div style="margin-bottom:12px;border:1px solid #c7d7f4;border-radius:8px;overflow:hidden">
-        ${header('Compliance Officer','#1e40af','#e8f0fe','#c7d7f4')}
+        ${header('Compliance &amp; Legal Officer','#1e40af','#e8f0fe','#c7d7f4')}
         ${wrap(`
           ${chk('co_1','Compliance Due Diligence reviewed')}
           ${row('Due Diligence is performed by RBO and valid','co_dd',['YES','NO','N/A'],true)}
           ${chk('co_3','Privacy Data Protection reviewed')}
           ${row('Appropriate clause is in place and the contract is in compliance with relevant laws and Mercedes-Benz Data Protection Policy','co_clause',['YES','NO','N/A'],true)}
+          ${isNonStd ? `
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #c7d7f4;font-size:.73rem;color:#1e40af;font-weight:700;margin-bottom:4px">
+            📋 Non-Standard Template — Legal Review
+          </div>
+          ${chk('co_ns1','Non-Standard Template reviewed and approved by Legal')}
+          <div style="margin-left:16px">
+            ${row('Anti-bribery clause is in place','co_anti',['YES','NO','NA'],true)}
+            ${row('Duty of confidentiality is in place','co_conf',['YES','NO','NA'],true)}
+          </div>
+          ` : ''}
           <div style="margin-top:8px;font-size:.72rem;color:#6b7280">Comment</div>
           ${commentBox('co_comment')}
         `)}
