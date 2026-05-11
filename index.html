@@ -662,9 +662,9 @@ const ADMIN_EMAILS = [
   '',
 ];
 // 고정 결재자
-const A3  = { name: 'Junsoon Lee (TEST)', email: '', role: '3차결재자(Compliance Director)', order: 3 };
+const A3  = { name: 'Junsoon Lee (TEST)', email: '', role: '3차결재자(Compliance Head)', order: 3 };
 const A4S = { name: 'Junsoon Lee (TEST)', email: '', role: '4차결재자(Controlling Head)', order: 4 }; // Sales 전용
-const A5  = { name: 'Junsoon Lee (TEST)', email: '', role: '5차결재자(Accounting Director)', order: 5 };
+const A5  = { name: 'Junsoon Lee (TEST)', email: '', role: '5차결재자(Accounting Head)', order: 5 };
 const A6  = { name: 'Junsoon Lee (TEST)', email: '', role: '6차결재자(CFO)',                 order: 6 };
 const A7  = { name: 'Junsoon Lee (TEST)', email: '', role: '7차결재자(CEO)',                 order: 7 };
 const ARD = { name: 'Junsoon Lee (TEST)', email: '', role: 'RD (최종)',                     order: 99 }; // TEST
@@ -2516,7 +2516,7 @@ async function submitForm() {
     approvers.push(A3); // 3차: Compliance Director (고정)
     if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
     const acctOrder = isSales ? 5 : 4;
-    approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Director)' });
+    approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Head)' });
     if (needCFO_CEO) {
       // chop 조건: CFO → CEO → RD 순으로 추가
       approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
