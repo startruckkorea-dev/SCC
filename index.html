@@ -698,7 +698,7 @@ async function token() {
   }
 }
 
-// ── 페이지네이션 전체 조회 헬퍼 (기존 .value 접근 호환) ──
+// ── 페이지네이션 전체 조회 헬퍼 ──
 async function apiAll(path) {
   let items = [], url = path;
   while(url) {
@@ -707,6 +707,12 @@ async function apiAll(path) {
     url = d['@odata.nextLink'] ? d['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0','') : null;
   }
   return {value: items};
+}
+// ApproverEmail 인덱싱 → 서버사이드 필터로 빠르게 조회
+async function apiMyApprovals(listPath, myEmail) {
+  const encoded = encodeURIComponent(myEmail);
+  const url = listPath + "?$expand=fields&$filter=fields/ApproverEmail eq '" + encoded + "'&$top=999";
+  return apiAll(url);
 }
 async function api(path, method='GET', body=null) {
   const t = await token();
@@ -924,11 +930,11 @@ async function loadApprovalQueue() {
   dynLoadStart('결재 정보 확인 중');
   try {
     const myEmail = (user.email||user.username||'').toLowerCase();
+    const myEmailForFilter = (user.email||user.username||'');
     const [apprData, reqData] = await Promise.all([
-      api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999&$orderby=Id desc'),
-      api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=999&$orderby=Id desc')
+      apiMyApprovals('/sites/' + siteId + '/lists/' + LIST_APR, myEmailForFilter),
+      api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=999')
     ]);
-    console.log('[결재함] nextLink:', apprData['@odata.nextLink']?'있음':'없음');
     const reqMap = {};
     reqData.value.forEach(function(r){ reqMap[r.id] = r.fields; });
     const myEmailAlt = (user.username||'').toLowerCase(); // MSAL username = email
