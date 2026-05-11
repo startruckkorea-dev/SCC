@@ -912,15 +912,25 @@ async function loadApprovalQueue() {
   const tbody = document.getElementById('appr-body');
   dynLoadStart('결재 정보 확인 중');
   try {
+    const myEmail = (user.email||user.username||'').toLowerCase();
     const [apprData, reqData] = await Promise.all([
       api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500'),
       api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500')
     ]);
     const reqMap = {};
     reqData.value.forEach(function(r){ reqMap[r.id] = r.fields; });
-    const mine = apprData.value
-      .filter(function(i){ return (i.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && i.fields.Status === '대기'; })
+    let mine = apprData.value
+      .filter(function(i){ return (i.fields.ApproverEmail||'').toLowerCase() === myEmail && (i.fields.Status||'').trim() === '대기'; })
       .sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
+    // 페이지네이션 처리 (500건 초과 시)
+    let nextLink = apprData['@odata.nextLink'];
+    while(nextLink) {
+      const more = await api(nextLink.replace('https://graph.microsoft.com/v1.0',''));
+      more.value.filter(i=>(i.fields.ApproverEmail||'').toLowerCase()===myEmail&&(i.fields.Status||'').trim()==='대기')
+        .forEach(i=>mine.push(i));
+      nextLink = more['@odata.nextLink']||null;
+    }
+    mine.sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
     if (!mine.length) { dynLoadEnd(); pgSet('appr', [], null, '결재 대기 항목이 없습니다.', 7); return; }
     const rows = mine.map(function(item) {
       const f = item.fields;
@@ -1330,22 +1340,17 @@ async function processApproval(apprId, action, reqId, comment='', checklistData=
       await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
     } else {
       // 현재 reqId의 모든 결재자 조회
-      // 해당 reqId의 결재자만 조회 (전체 조회 후 필터 방식 → 누락 방지)
-      const all = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=100');
-      const thisReq = all.value
+      // 해당 reqId 결재자 조회 - 페이지네이션으로 전체 확보
+      let _allPages = [];
+      let _nextUrl = '/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500';
+      while(_nextUrl) {
+        const _page = await api(_nextUrl);
+        _allPages = _allPages.concat(_page.value);
+        _nextUrl = _page['@odata.nextLink'] ? _page['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0','') : null;
+      }
+      const thisReq = _allPages
         .filter(i => Number(i.fields.RequestID) === Number(reqId))
         .map(i => String(i.id) === String(apprId) ? {...i, fields:{...i.fields, Status:'승인'}} : i);
-      // 혹시 100건 초과 시 추가 페이지 조회
-      if (all['@odata.nextLink']) {
-        let nextUrl = all['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0','');
-        while(nextUrl) {
-          const more = await api(nextUrl);
-          more.value.filter(i=>Number(i.fields.RequestID)===Number(reqId)).forEach(i=>{
-            thisReq.push(String(i.id)===String(apprId)?{...i,fields:{...i.fields,Status:'승인'}}:i);
-          });
-          nextUrl = more['@odata.nextLink']?.replace('https://graph.microsoft.com/v1.0','') || null;
-        }
-      }
 
       console.log('이 건 결재자 현황:', thisReq.map(i=>i.fields.ApprovalOrder+'차:'+i.fields.Status));
 
