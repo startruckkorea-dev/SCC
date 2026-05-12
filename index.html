@@ -1288,7 +1288,7 @@ ${(()=>{
     <tr><th>차수</th><th>역할</th><th>결재자</th><th>일시</th><th>결과</th><th>의견</th></tr>
     ${aprs.map(a => {
       const af = a.fields;
-      const dateStr = af.ApprovalDate ? af.ApprovalDate.substring(0,16).replace('T',' ') : '-';
+      const dateStr = af.ApprovalDate ? fmtDate(af.ApprovalDate) : '-';
       // SharePoint HTML wrapper 제거 (DOMParser 사용)
       const _rawCmt = af.Comment || '';
       const _cleanCmt = (() => {
@@ -1837,7 +1837,7 @@ async function exportAdminExcel() {
         item.id,
         f.RequesterEmail || '',
         f.Status || '',
-        f.RequestDate ? f.RequestDate.substring(0,16).replace('T',' ') : '',
+        f.RequestDate ? fmtDate(f.RequestDate) : '',
         f.Title || '',
         f.ContractCompanyType || '',
         f.ContractType || '',
@@ -1869,7 +1869,7 @@ async function exportAdminExcel() {
           row.push(a.ApproverName || '');
           row.push(a.ApproverEmail || '');
           row.push(a.Status || '');
-          row.push(a.ApprovalDate ? a.ApprovalDate.substring(0,16).replace('T',' ') : '');
+          row.push(a.ApprovalDate ? fmtDate(a.ApprovalDate) : '');
           row.push(cleanComment(a.Comment || ''));
         } else {
           row.push('','','','','','');
