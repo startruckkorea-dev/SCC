@@ -2660,7 +2660,7 @@ function loading(v, title='처리 중...', sub='') {
   if (t) t.textContent = title;
   if (s) s.textContent = sub;
 }
-function showLoginError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+function showLoginError(msg) { const el = document.getElementById('login-err'); if(el){ el.style.display = 'block'; el.textContent = '오류: ' + msg; } }
 
 // ── MSAL Init ──
 (async () => {
