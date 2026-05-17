@@ -2626,7 +2626,7 @@ function showLoginError(msg) { const el = document.getElementById('login-error')
 (async () => {
   const msalInstance = await msal.PublicClientApplication.createPublicClientApplication({
     auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID, redirectUri: window.location.origin + window.location.pathname },
-    cache: { cacheLocation: 'localStorage' }
+    cache: { cacheLocation: 'sessionStorage' }
   });
   msalApp = msalInstance; msal = msalApp;
   const btn = document.getElementById('btn-login');
