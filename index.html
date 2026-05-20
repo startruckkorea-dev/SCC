@@ -2636,7 +2636,7 @@ function showLoginError(msg) { const el = document.getElementById('login-error')
   if (resp) { msal.setActiveAccount(resp.account); await boot(resp.account); return; }
   const accounts = msal.getAllAccounts();
   if (accounts.length) { msal.setActiveAccount(accounts[0]); await boot(accounts[0]); return; }
-  btn.disabled = false; btn.style.background = ''; btn.textContent = 'Microsoft 계정으로 로그인';
+  btn.disabled = false; btn.style.background = ''; btn.textContent = 'Hyosung M365 계정으로 로그인';
 })();
 
 // ── Pagination Utility ──
