@@ -915,7 +915,7 @@ async function loadMyList() {
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '등록된 신청이 없습니다.', 6); return; }
-    dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '등록된 신청이 없습니다.', 6);
+    dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td></tr>'; }, '등록된 신청이 없습니다.', 6);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
