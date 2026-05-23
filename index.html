@@ -2588,7 +2588,7 @@ async function submitForm() {
 
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
-        Title: reqId + '-' + a.order,
+        Title: 'SCC-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId + '-' + a.order,
         RequestID: reqId,
         ApproverEmail: a.email,
         ApproverName: a.name,
