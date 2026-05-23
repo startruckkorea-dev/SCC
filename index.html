@@ -664,6 +664,7 @@ const ADMIN_EMAILS = [
   '',
   '',
 ];
+let _configLoaded = false;
 // 고정 결재자
 const A3  = { name: 'Junsoon Lee (TEST)', email: '', role: '3차결재자(Compliance Head)', order: 3 };
 const A4S = { name: 'Junsoon Lee (TEST)', email: '', role: '4차결재자(Controlling Head)', order: 4 }; // Sales 전용
@@ -787,6 +788,7 @@ async function boot(account) {
       if(_sccContactEl) _sccContactEl.textContent='관련 문의 Email: '+_contact.email;
       const _adminList = cfgEmails(_cfg,['SCC_ADMIN_1','ADMIN_SP']);
       if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
+      _configLoaded = true;
       Object.assign(A3,  cfgVal(_cfg,'SCC_COMPLIANCE', A3));
       Object.assign(A4S, cfgVal(_cfg,'SCC_CONTROLLING',A4S));
       Object.assign(A5,  cfgVal(_cfg,'SCC_ACCOUNTING', A5));
@@ -886,6 +888,15 @@ async function checkApprovalBadge() {
 // ── Tabs ──
 function switchTab(name) {
   if (name === 'admin') {
+    if (!_configLoaded) {
+      const _btn = document.getElementById('tab-admin-btn');
+      if (_btn) { _btn.style.opacity='0.6'; _btn.style.pointerEvents='none'; _btn.title='권한 확인 중...'; }
+      setTimeout(() => {
+        if (_btn) { _btn.style.opacity=''; _btn.style.pointerEvents=''; _btn.title=''; }
+        switchTab('admin');
+      }, 1500);
+      return;
+    }
     const _emails = typeof ADMIN_EMAILS !== 'undefined' ? ADMIN_EMAILS : [];
     const _user = typeof user !== 'undefined' ? user : null;
     const _isAdmin = _user && _emails.map(e=>e.toLowerCase()).some(e =>
