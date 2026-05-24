@@ -967,7 +967,7 @@ async function loadApprovalQueue() {
     };
     let mine = apprData.value
       .filter(function(i){ return matchEmail(i.fields.ApproverEmail) && (i.fields.Status||'').trim() === '대기'; })
-      .reduce(function(acc,i){var rid=String(i.fields.RequestID);if(!acc[rid]||i.fields.ApprovalOrder<acc[rid].fields.ApprovalOrder)acc[rid]=i;return acc;},{}), Object.values)
+      .reduce(function(acc,i){var rid=String(i.fields.RequestID);if(!acc[rid]||i.fields.ApprovalOrder<acc[rid].fields.ApprovalOrder)acc[rid]=i;return acc;},{})
       .sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
     console.log('[결재함] 내 대기 항목:', mine.length);
     // 페이지네이션 처리 (500건 초과 시)
