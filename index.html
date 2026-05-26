@@ -2116,7 +2116,7 @@ async function showDetail(reqId) {
           apprList.map(a => {
             const af = a.fields;
             return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 12px;border-bottom:1px solid #edebe9">' +
-              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _rc=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _rp=_rc.replace(/^결재자\s*/,'');return _rp?'<b>'+_o+'차</b> 결재자('+_rp+')':'<b>'+_o+'차</b> 결재자';})() + '</div>' +
+              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q;})() + '</div>' +
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
               (() => {
@@ -2872,7 +2872,7 @@ function openUniDetail(apprId) {
     '<div style="font-size:.72rem;font-weight:600;color:#0078d4;background:#f0f6ff;border-left:3px solid #0078d4;padding:5px 10px;border-radius:4px;margin-bottom:8px">결재 현황</div>' +
     '<div style="background:#f9f9f9;border-radius:6px;border:1px solid #edebe9;overflow:hidden;margin-bottom:14px">' +
     apprList.map(af => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #edebe9">' +
-      '<div><div style="font-weight:600;font-size:.8rem">'+(()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _rc=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _rp=_rc.replace(/^결재자\s*/,'');return _rp?'<b>'+_o+'차</b> 결재자('+_rp+')':'<b>'+_o+'차</b> 결재자';})()+'</div>' +
+      '<div><div style="font-weight:600;font-size:.8rem">'+(()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q;})()+'</div>' +
       '<div style="font-size:.72rem;color:#605e5c">'+(af.ApproverName||'')+' · '+(af.ApproverEmail||'')+'</div></div>' +
       '<span style="color:'+(sc[af.Status]||'#323130')+';font-weight:700;font-size:.75rem;white-space:nowrap">'+(af.Status||'')+'</span></div>'
     ).join('') + '</div>' +
