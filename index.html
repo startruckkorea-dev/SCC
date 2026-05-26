@@ -593,9 +593,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <table class="list-table">
         <thead><tr>
           <th>번호</th><th>제목</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th>
-        </tr></thead>
+        <th></th></tr></thead>
         <tbody id="list-body">
-          <tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -941,9 +941,9 @@ async function loadMyList() {
     const mine = data.value
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
-    if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '등록된 신청이 없습니다.', 6); return; }
+    if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '등록된 신청이 없습니다.', 7); return; }
     dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td style="text-align:center">'+_wdBtn(item.id,'STK_ContractApprovals','STK_Contracts',f.Status)+'</td></tr>'; }, '등록된 신청이 없습니다.', 6);
-  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
 // ── Approval Queue ──
