@@ -1239,7 +1239,7 @@ async function printApprovalDoc(reqId) {
   .header h1{margin:0;font-size:14px;font-weight:700}
   .header .sub{font-size:10px;opacity:.7;margin-top:3px}
   .header .meta{text-align:right;font-size:10px;opacity:.75}
-  .chop-notice{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:7px 12px;margin-bottom:14px;font-size:10px;color:#92400e;font-weight:600}
+  .chop-notice{background:#f0f4ff;border-left:3px solid #1d4ed8;border-radius:4px;padding:10px 14px;margin-bottom:14px;font-size:10px;color:#1e3a5f;line-height:1.7}
   .section{margin-bottom:12px}
   .sec-title{font-size:10px;font-weight:700;color:#0078d4;border-bottom:1px solid #c7e0f4;padding-bottom:3px;margin-bottom:7px}
   .row{display:flex;gap:8px;margin-bottom:3px}
@@ -1255,10 +1255,10 @@ async function printApprovalDoc(reqId) {
   .footer{margin-top:16px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:9px;color:#94a3b8;text-align:center}
 </style></head><body>
 <div class="header">
-  <div><h1>📄 STK Contract Approval Record</h1><div class="sub">chop 승인 목적용 승인내역</div></div>
+  <div><h1>STK Contract Approval Record</h1><div class="sub">chop 승인 목적용 승인내역</div></div>
   <div class="meta">출력일시: ${nowStr}<br>Contract #${reqId}</div>
 </div>
-<div class="chop-notice">⚠️ 본 문서는 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역입니다.</div>
+<div class="chop-notice">본 문서는 Final signing off 선택 조항에서 <b>signatures and corporate chop</b> 또는 <b>chop only</b> 조건을 선택하여 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역이며, 그 외의 목적으로는 사용이 불가합니다.</div>
 
 <div class="section">
   <div class="sec-title">기본 정보</div>
