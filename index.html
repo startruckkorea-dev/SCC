@@ -2049,7 +2049,7 @@ async function showDetail(reqId) {
       row('Contract Type', f.ContractType) +
       row('Contract Partner', f.ContractPartner) +
       row('Objective', f.Objective) +
-      row('Contract Value', f.ContractValue ? f.ContractValue + ' ' + (f.Currency||'') : '-') +
+      row('Contract Value', f.ContractValue ? Number(f.ContractValue).toLocaleString() + ' ' + (f.Currency||'') : '-') +
       row('Contract Period', (f.PeriodType||'') + (f.PeriodStart ? ' | ' + f.PeriodStart + ' ~ ' + (f.PeriodEnd||'No end') : '')) +
       row('Payment Term', f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-');
 
