@@ -2046,6 +2046,7 @@ async function showDetail(reqId) {
       row('신청일', fmtDate(f.RequestDate)) +
       sec('계약 정보') +
       row('제목', f.Title) +
+      row('Title of Contract', f.ContractTitle||'(미입력)') +
       row('Type', f.ContractCompanyType) +
       row('Contract Type', f.ContractType) +
       row('Contract Partner', f.ContractPartner) +
