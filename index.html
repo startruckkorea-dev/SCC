@@ -1270,7 +1270,7 @@ async function printApprovalDoc(reqId) {
 
 <div class="section">
   <div class="sec-title">계약 정보</div>
-  <div class="row"><span class="label">Title of Contract</span><span class="value">${f.ContractTitle||'-'}</span></div>
+  <div class="row"><span class="label">Title of Contract</span><span class="value" style="color:${f.ContractTitle?'inherit':'#a19f9d'}">${f.ContractTitle||'(미입력)'}</span></div>
   <div class="row"><span class="label">Type</span><span class="value">${f.ContractCompanyType||'-'}</span></div>
   <div class="row"><span class="label">Contract Type</span><span class="value">${f.ContractType||'-'}</span></div>
   <div class="row"><span class="label">Contract Partner</span><span class="value">${f.ContractPartner||'-'}</span></div>
