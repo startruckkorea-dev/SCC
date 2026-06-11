@@ -958,7 +958,7 @@ async function loadMyList() {
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '등록된 신청이 없습니다.', 7); return; }
-    dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'STK_ContractApprovals','STK_Contracts',f.Status)+'</td></tr>'; }, '등록된 신청이 없습니다.', 6);
+    dynLoadEnd(); pgSet('list', mine, (item, idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'STK_ContractApprovals','STK_Contracts',f.Status)+'</td></tr>'; }, '등록된 신청이 없습니다.', 6);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
@@ -2067,11 +2067,11 @@ async function loadAdminList() {
         if (h.fields.RequestID) hashMap[String(h.fields.RequestID)] = h.fields.FileHash_SHA256 || '';
       });
     } catch(e) { console.warn('Hash 조회 실패:', e); }
-    dynLoadEnd(); pgSet('admin', items, item => {
+    dynLoadEnd(); pgSet('admin', items, (item, idx) => {
       const f = item.fields;
       const hash = hashMap[String(item.id)] || '';
       const hashDisplay = hash ? '<span title="' + hash + '" style="font-family:monospace;font-size:.68rem;color:#605e5c;cursor:help">' + hash.substring(0,12) + '...</span>' : '<span style="color:#a19f9d;font-size:.75rem">-</span>';
-      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.ContractPartner||'-') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
+      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.ContractPartner||'-') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
     }, '조회 결과가 없습니다.', 9);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
@@ -2771,7 +2771,7 @@ function pgRender(scopeId) {
   if (!slice.length) {
     tbody.innerHTML = '<tr><td colspan="' + (colSpan||7) + '" style="text-align:center;padding:32px;color:#605e5c">' + (emptyMsg||'항목이 없습니다.') + '</td></tr>';
   } else {
-    tbody.innerHTML = slice.map(renderer).join('');
+    const _off=cur*PAGE_SIZE;const _tot=items.length;tbody.innerHTML=slice.map((item,idx)=>renderer(item,_tot-(_off+idx)-1)).join('');
   }
   let pgEl = document.getElementById(scopeId + '-pagination');
   if (!pgEl) {
