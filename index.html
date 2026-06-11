@@ -1117,20 +1117,50 @@ function showConfirm(apprId, action, reqId, apprRole='', contractType='', compan
 
     // ── Accounting ──
     if (role.includes('Accounting')) {
-      if (isNonStdNonSales) {
-        clHtml += `<div style="margin-bottom:12px;border:1px solid #fed7aa;border-radius:8px;overflow:hidden">
-          ${header('Accounting Department <span style="font-weight:400;font-size:.7rem">(For non-standard contract template only)</span>','#92400e','#fff7ed','#fed7aa')}
-          ${wrap(`
-            <div style="font-size:.75rem;color:#374151;margin-bottom:6px">Payment Term reviewed
-              <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
-                ${['Standard','Intercompany Standard','Non-standard','N/A'].map(o=>`<label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:.75rem"><input type="radio" name="ac_pt" value="${o}" class="cl-radio">&nbsp;${o}</label>`).join('')}
-              </div>
-            </div>
-            <div style="font-size:.72rem;color:#6b7280;margin:6px 0 4px">해당 항목 선택 (복수 선택 가능):</div>
-            ${['Immediate revenue recognition','Any deferred revenue recognition','Provisions or accruals and deferrals (accounting of utilization/dissolution) are necessary','Services are provided by a different Group company or third parties','Individual contractual regulations — subsequent, conditionally granted price reductions','Extended guarantees for existing contract','Additional service agreements for existing contract','Additional information required for recognizing values for accounting purposes','Dual GAAP postings are necessary','None of above'].map((item,i)=>chk('ac_m'+i,item)).join('')}
-          `)}
-        </div>`;
-      }
+      // Accounting 메인 섹션 — 4가지 조건 모두 표시, Sales/Non-Sales별 항목 분기
+      const acItems = isNonSales ? [
+        // Non-Sales (Standard & Non-Standard) 공통 항목
+        { id:'ac_lease', label:'Leasing arrangements', sub:[
+            {name:'ac_lease_ifrs', label:'Is the contract accounted for as a lease under IFRS 16?', opts:['Yes','No']}
+          ]},
+        { id:'ac_cont', label:'Contingent liabilities, warranties, guarantees and other financial obligations'},
+        { id:'ac_deriv', label:'Embedded derivatives', sub:[
+            {name:'ac_deriv_curr', label:'Does any contract clause include the use of non-functional currency of Mercedes-Benz of MPC?', opts:['Yes','No']},
+            {name:'ac_deriv_pay', label:'Is there any contract clause to use an embedded derivatives for the payment?', opts:['Yes','No']}
+          ]},
+        { id:'ac_rd', label:'Research and development (R&D) costs in long-term development contracts and supply contracts including removal expenses'},
+        { id:'ac_price', label:'Price fluctuation arrangements'},
+        { id:'ac_none', label:'None of above'},
+      ] : [
+        // Sales (Standard & Non-Standard) 공통 항목
+        { id:'ac_m0', label:'Immediate recognition'},
+        { id:'ac_m1', label:'Any deferred revenue recognition'},
+        { id:'ac_m2', label:'Provisions or accruals and deferrals, as well as the accounting of the utilization and dissolution of these positions are necessary'},
+        { id:'ac_m3', label:'Services are provided by a different Group company or third parties'},
+        { id:'ac_m4', label:'Individual contractual regulations are to be regarded as subsequent, conditionally granted price reductions or as settlement of services'},
+        { id:'ac_m5', label:'Extended guarantees for existing contract'},
+        { id:'ac_m6', label:'Additional service agreements for existing contract'},
+        { id:'ac_m7', label:'Additional information is required for recognizing values for accounting purposes'},
+        { id:'ac_m8', label:'Dual GAAP postings are necessary'},
+        { id:'ac_m9', label:'None of above'},
+      ];
+
+      let acItemsHtml = '<div style="font-size:.72rem;color:#6b7280;margin:6px 0 4px">해당 항목 선택 (복수 선택 가능):</div>';
+      acItems.forEach(item => {
+        acItemsHtml += chk(item.id, item.label);
+        if (item.sub) {
+          item.sub.forEach(s => {
+            acItemsHtml += row(s.label, s.name, s.opts, true);
+          });
+        }
+      });
+      acItemsHtml += `<div style="margin-top:8px;font-size:.72rem;color:#6b7280">Comment</div>${commentBox('ac_comment')}`;
+
+      clHtml += `<div style="margin-bottom:12px;border:1px solid #fed7aa;border-radius:8px;overflow:hidden">
+        ${header('Accounting Department','#92400e','#fff7ed','#fed7aa')}
+        ${wrap(acItemsHtml)}
+      </div>`;
+
       // 무조건: Tax
       clHtml += `<div style="margin-bottom:12px;border:1px solid #e9d5ff;border-radius:8px;overflow:hidden">
         ${header('Accounting Department Tax','#6d28d9','#f5f3ff','#e9d5ff')}
@@ -1204,6 +1234,7 @@ async function confirmApproval() {
           // comment는 빈 값이어도 항상 포함
           if (el.id === 'co_comment') { lines.push('  Comment: ' + (el.value.trim()||'-')); clFields['co_comment'] = el.value.trim(); }
           else if (el.id === 'ct_comment') { lines.push('  Comment: ' + (el.value.trim()||'-')); clFields['ct_comment'] = el.value.trim(); }
+          else if (el.id === 'ac_comment') { lines.push('  Comment: ' + (el.value.trim()||'-')); clFields['ac_comment'] = el.value.trim(); }
           else if (el.id === 'tax_comment') { if(el.value.trim()) { lines.push('  Tax risk comment: ' + el.value.trim()); clFields['tax_comment'] = el.value.trim(); } }
           else if (el.value.trim()) { lines.push('  → ' + el.value.trim()); }
         }
