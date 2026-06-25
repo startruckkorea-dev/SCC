@@ -2087,12 +2087,11 @@ async function showDetail(reqId) {
     const statusColor = f.Status === '승인완료' ? '#107c10' : f.Status === '반려' ? '#a4262c' : f.Status === '처리중' ? '#0078d4' : '#7d5700';
 
     let html = sec('기본 정보') +
-      row('번호', reqId) +
+      row('제목', f.Title) +
       row('신청자', f.RequesterEmail) +
       row('상태', '<span style="font-weight:600;color:' + statusColor + '">' + (f.Status||'') + '</span>') +
       row('신청일', fmtDate(f.RequestDate)) +
       sec('계약 정보') +
-      row('제목', f.Title) +
       row('Title of Contract', f.ContractTitle||'(미입력)') +
       row('Type', f.ContractCompanyType) +
       row('Contract Type', f.ContractType) +
