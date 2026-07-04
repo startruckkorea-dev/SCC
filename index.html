@@ -2318,14 +2318,16 @@ async function showDetail(reqId) {
     const actionBar = document.getElementById('modal-action-bar');
     if (actionBar) {
       const mp = window._pendingApproverBtn;
-      const printBtnHtml = '<div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><button onclick="printApprovalDoc(' + reqId + ')" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap">승인내역 출력</button><span style="font-size:.72rem;color:#605e5c;line-height:1.6;max-width:420px;display:inline-block">Final signing off에서 Chop 옵션 선택 후 전원 승인 완료 시, 출력하여 계약 서류와 함께 Accounting 부서에 증빙 제출 → Chop 처리</span></div> ';
-      actionBar.style.display = 'flex';
+      actionBar.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:14px 32px;border-top:1px solid #edebe9;background:#fff;flex-shrink:0';
+      const printRowHtml = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button onclick="printApprovalDoc(' + reqId + ')" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">승인내역 출력</button><span style="font-size:.72rem;color:#605e5c;line-height:1.6">Final signing off에서 Chop 옵션 선택 후 전원 승인 완료 시, 출력하여 계약 서류와 함께 Accounting 부서에 증빙 제출 → Chop 처리</span></div>';
       if (mp) {
-        actionBar.innerHTML = printBtnHtml +
-          '<button onclick="showConfirmWithData(' + mp.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">✅ 승인</button>' +
-          '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700">❌ 반려</button>';
+        actionBar.innerHTML = printRowHtml +
+          '<div style="display:flex;gap:10px">' +
+            '<button onclick="showConfirmWithData(' + mp.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700;min-width:0">✅ 승인</button>' +
+            '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="flex:1;border-radius:6px;padding:12px;font-size:.95rem;font-weight:700;min-width:0">❌ 반려</button>' +
+          '</div>';
       } else {
-        actionBar.innerHTML = printBtnHtml;
+        actionBar.innerHTML = printRowHtml;
       }
     }
 
