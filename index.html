@@ -736,6 +736,38 @@ async function api(path, method='GET', body=null) {
   return res.status === 204 ? null : res.json();
 }
 
+// 동시/연속 처리 시 SharePoint 스로틀링(429/503 등)으로 실패할 수 있는 중요 쓰기 작업용 재시도 래퍼
+async function apiWithRetry(path, method='GET', body=null, maxRetries=4) {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const t = await token();
+      const opts = { method, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(GRAPH + path, opts);
+      if (res.ok) return res.status === 204 ? null : res.json();
+      // 429(Too Many Requests)/503(Service Unavailable)/504 는 재시도 가치가 있음
+      if ((res.status === 429 || res.status === 503 || res.status === 504) && attempt < maxRetries) {
+        const retryAfter = parseFloat(res.headers.get('Retry-After')) || 0;
+        const waitMs = retryAfter > 0 ? retryAfter * 1000 : Math.min(1000 * Math.pow(2, attempt), 8000);
+        console.warn(`[apiWithRetry] ${res.status} 응답, ${waitMs}ms 후 재시도 (${attempt+1}/${maxRetries})`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      const errBody = await res.json().catch(()=>null);
+      throw new Error(errBody?.error?.message || res.status);
+    } catch(e) {
+      lastErr = e;
+      if (attempt < maxRetries) {
+        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+        console.warn(`[apiWithRetry] 오류(${e.message}), ${waitMs}ms 후 재시도 (${attempt+1}/${maxRetries})`);
+        await new Promise(r => setTimeout(r, waitMs));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 // ── Boot ──
 
 // ── System Config from SharePoint (system_config_final.xlsx) ──
@@ -1685,10 +1717,9 @@ async function processApprovedContract(reqId) {
       hashHex = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
-    // 8. 해시 + 승인 정보 SharePoint 리스트에 기록
+    // 8. 해시 + 승인 정보 SharePoint 리스트에 기록 (동시/연속 승인 시 스로틀링 대비 재시도 포함)
     try {
-      // ApprovalRecords 리스트에 기록 시도
-      await api('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', {
+      await apiWithRetry('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', {
         fields: {
           Title: `Contract #${reqId} - ${origName}`,
           RequestID: parseInt(reqId),
@@ -1700,10 +1731,15 @@ async function processApprovedContract(reqId) {
           ContractTitle: f.Title || '',
           ApprovedFolderPath: uploadedItem ? uploadedItem.webUrl : '',
         }
-      });
+      }, 4);
     } catch(e) {
-      console.error('ApprovalRecords 기록 실패:', e.message);
-      // 실패해도 alert 없이 계속 진행 (파일 저장은 완료됨)
+      // 여러 번 재시도해도 실패한 경우에만 (드문 케이스) — 조용히 넘기지 않고 눈에 띄게 경고
+      console.error('ApprovalRecords 기록 실패(재시도 4회 후):', e.message);
+      alert(
+        `⚠️ 계약서 승인/파일 저장/워터마크는 정상 완료됐지만,\n` +
+        `SHA-256 무결성 기록만 저장에 실패했습니다 (Contract #${reqId}).\n\n` +
+        `잠시 후 관리자에게 이 건의 무결성 기록 재생성을 요청해주세요.\n(오류: ${e.message})`
+      );
     }
   }
 
