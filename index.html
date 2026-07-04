@@ -2116,6 +2116,7 @@ async function loadAdminList() {
 // ── Show Detail ──
 async function showDetail(reqId) {
   loading(true);
+  window._pendingApproverBtn = null; // 매번 초기화 (이전 건의 상태가 남지 않도록)
   try {
     const r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
     const f = r.fields;
@@ -2245,14 +2246,14 @@ async function showDetail(reqId) {
               '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + (af.Status||'') + '</span></div>';
           }).join('') + '</div>';
         // 내 결재 대기 건 버튼
-        const reqStatus = (reqData.fields.Status||'').trim();
+        const reqStatus = (f.Status||'').trim();
         const myPending = reqStatus === '처리중' ? null :
           apprList.find(a => (a.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && (a.fields.Status||'').trim() === '대기');
-        window._pendingReqData = reqData; // 항상 저장 (출력 버튼용)
+        window._pendingReqData = r; // 항상 저장 (출력 버튼용)
         if (myPending) { window._pendingApproverBtn = myPending; }
         else { window._pendingApproverBtn = null; }
       }
-    } catch(e) {}
+    } catch(e) { console.error('결재 대기 버튼 처리 오류:', e.message); }
 
     // 첨부파일 표시
     let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
