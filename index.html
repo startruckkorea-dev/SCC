@@ -1362,21 +1362,13 @@ async function printApprovalDoc(reqId) {
 
 ${(()=>{
   const tmpl = (f.ContractTemplate||'').replace(/<[^>]*>/g,'').replace(/&#58;/g,':').replace(/&amp;/g,'&').trim();
-  const checkedList = tmpl ? tmpl.split(';').map(s=>s.trim()).filter(Boolean) : [];
-  const isChecked = (label) => checkedList.includes(label);
-  const otherStd = checkedList.find(c=>c.startsWith('- Other standard template'));
-  const row = (checked, label, indent) => '<div class="row"' + (indent?' style="padding-left:18px"':'') + '><span class="label" style="min-width:10px;color:' + (checked?'#107c10':'#c8c6c4') + '">' + (checked?'✓':'☐') + '</span><span class="value" style="color:' + (checked?'inherit':'#a19f9d') + '">' + label + '</span></div>';
+  if (!tmpl) return '';
+  let lines = tmpl.split(';').map(l=>l.trim()).filter(Boolean);
+  // Government template 항상 맨 아래
+  const govLine = lines.filter(l=>l==='Government template');
+  lines = [...lines.filter(l=>l!=='Government template'), ...govLine];
   return '<div class="section"><div class="sec-title">3. Contract Template</div>' +
-    row(isChecked('Standard template'), 'Standard template') +
-    row(isChecked('- Dealership / Service Center Agreement'), '- Dealership / Service Center Agreement', true) +
-    row(isChecked('- Service Level Agreement with Other Mercedes-Benz Entity'), '- Service Level Agreement with Other Mercedes-Benz Entity', true) +
-    row(isChecked('- (STK) Bodybuilder Framework Agreement'), '- (STK) Bodybuilder Framework Agreement', true) +
-    row(!!otherStd, otherStd || '- Other standard template', true) +
-    row(isChecked('Non-Standard template'), 'Non-Standard template') +
-    row(isChecked("- Legal's review was complete"), "- Legal's review was complete", true) +
-    row(isChecked('- Soft copy was emailed to Legal'), '- Soft copy was emailed to Legal', true) +
-    row(isChecked('- Contract was drafted by Legal'), '- Contract was drafted by Legal', true) +
-    row(isChecked('Government template'), 'Government template') +
+    lines.map(l=>'<div class="row"><span class="label" style="min-width:8px">✓</span><span class="value">' + l + '</span></div>').join('') +
     '</div>';
 })()}
 
@@ -2148,24 +2140,33 @@ async function showDetail(reqId) {
       row('Payment Term', f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-');
 
     // ── 3. Contract Template ──
-    if (f.ContractTemplate) {
+    {
       html += sec('3. Contract Template');
-      // HTML 태그 제거 후 파싱
       const rawTmplDisp = (f.ContractTemplate || '')
         .replace(/<[^>]*>/g, '')  // HTML 태그 제거
         .replace(/&#58;/g, ':')   // : 디코딩
         .replace(/&#59;/g, ';')   // ; 디코딩 (혹시 있을 경우)
         .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
         .trim();
-      console.log('[TMPL raw]', JSON.stringify(rawTmplDisp));
-      const tmplItems = rawTmplDisp.split(';')
-        .map(s => s.trim())
-        .filter(s => s && s !== ')' && s !== '(' && s.length > 1);
-      const tmplHtml = tmplItems.map(item =>
-        '<div style="padding:3px 0;font-size:13px;display:flex;align-items:flex-start;gap:6px">' +
-        '<span style="color:#107c10;flex-shrink:0">✓</span><span>' + item + '</span></div>'
-      ).join('');
-      html += '<div style="padding:6px 0">' + (tmplHtml || '-') + '</div>';
+      const checkedList = rawTmplDisp ? rawTmplDisp.split(';').map(s => s.trim()).filter(s => s && s !== ')' && s !== '(' && s.length > 1) : [];
+      const isChecked = label => checkedList.includes(label);
+      const otherStd = checkedList.find(c => c.startsWith('- Other standard template'));
+      const tmplRow = (checked, label, indent) =>
+        '<div style="padding:3px 0' + (indent?';padding-left:20px':'') + ';font-size:13px;display:flex;align-items:flex-start;gap:6px">' +
+        '<span style="color:' + (checked?'#107c10':'#c8c6c4') + ';flex-shrink:0">' + (checked?'✓':'☐') + '</span>' +
+        '<span style="color:' + (checked?'inherit':'#a19f9d') + '">' + label + '</span></div>';
+      const tmplHtml =
+        tmplRow(isChecked('Standard template'), 'Standard template') +
+        tmplRow(isChecked('- Dealership / Service Center Agreement'), '- Dealership / Service Center Agreement', true) +
+        tmplRow(isChecked('- Service Level Agreement with Other Mercedes-Benz Entity'), '- Service Level Agreement with Other Mercedes-Benz Entity', true) +
+        tmplRow(isChecked('- (STK) Bodybuilder Framework Agreement'), '- (STK) Bodybuilder Framework Agreement', true) +
+        tmplRow(!!otherStd, otherStd || '- Other standard template', true) +
+        tmplRow(isChecked('Non-Standard template'), 'Non-Standard template') +
+        tmplRow(isChecked("- Legal's review was complete"), "- Legal's review was complete", true) +
+        tmplRow(isChecked('- Soft copy was emailed to Legal'), '- Soft copy was emailed to Legal', true) +
+        tmplRow(isChecked('- Contract was drafted by Legal'), '- Contract was drafted by Legal', true) +
+        tmplRow(isChecked('Government template'), 'Government template');
+      html += '<div style="padding:6px 0">' + tmplHtml + '</div>';
     }
 
     // ── 4. Compliance / Final Check ──
