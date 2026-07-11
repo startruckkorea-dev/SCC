@@ -1362,13 +1362,21 @@ async function printApprovalDoc(reqId) {
 
 ${(()=>{
   const tmpl = (f.ContractTemplate||'').replace(/<[^>]*>/g,'').replace(/&#58;/g,':').replace(/&amp;/g,'&').trim();
-  if (!tmpl) return '';
-  let lines = tmpl.split(';').map(l=>l.trim()).filter(Boolean);
-  // Government template 항상 맨 아래
-  const govLine = lines.filter(l=>l==='Government template');
-  lines = [...lines.filter(l=>l!=='Government template'), ...govLine];
+  const checkedList = tmpl ? tmpl.split(';').map(s=>s.trim()).filter(Boolean) : [];
+  const isChecked = (label) => checkedList.includes(label);
+  const otherStd = checkedList.find(c=>c.startsWith('- Other standard template'));
+  const row2 = (checked, label, indent) => '<div class="row"' + (indent?' style="padding-left:18px"':'') + '><span class="label" style="min-width:10px;color:' + (checked?'#107c10':'#c8c6c4') + '">' + (checked?'☑':'☐') + '</span><span class="value" style="color:' + (checked?'inherit':'#a19f9d') + '">' + label + '</span></div>';
   return '<div class="section"><div class="sec-title">3. Contract Template</div>' +
-    lines.map(l=>'<div class="row"><span class="label" style="min-width:8px">✓</span><span class="value">' + l + '</span></div>').join('') +
+    row2(isChecked('Standard template'), 'Standard template') +
+    row2(isChecked('- Dealership / Service Center Agreement'), '- Dealership / Service Center Agreement', true) +
+    row2(isChecked('- Service Level Agreement with Other Mercedes-Benz Entity'), '- Service Level Agreement with Other Mercedes-Benz Entity', true) +
+    row2(isChecked('- (STK) Bodybuilder Framework Agreement'), '- (STK) Bodybuilder Framework Agreement', true) +
+    row2(!!otherStd, otherStd || '- Other standard template', true) +
+    row2(isChecked('Non-Standard template'), 'Non-Standard template') +
+    row2(isChecked("- Legal's review was complete"), "- Legal's review was complete", true) +
+    row2(isChecked('- Soft copy was emailed to Legal'), '- Soft copy was emailed to Legal', true) +
+    row2(isChecked('- Contract was drafted by Legal'), '- Contract was drafted by Legal', true) +
+    row2(isChecked('Government template'), 'Government template') +
     '</div>';
 })()}
 
