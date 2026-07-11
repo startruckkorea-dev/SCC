@@ -2153,7 +2153,7 @@ async function showDetail(reqId) {
       const otherStd = checkedList.find(c => c.startsWith('- Other standard template'));
       const tmplRow = (checked, label, indent) =>
         '<div style="padding:3px 0' + (indent?';padding-left:20px':'') + ';font-size:13px;display:flex;align-items:flex-start;gap:6px">' +
-        '<span style="color:' + (checked?'#107c10':'#c8c6c4') + ';flex-shrink:0">' + (checked?'✓':'☐') + '</span>' +
+        '<span style="color:' + (checked?'#107c10':'#c8c6c4') + ';flex-shrink:0;font-size:14px">' + (checked?'☑':'☐') + '</span>' +
         '<span style="color:' + (checked?'inherit':'#a19f9d') + '">' + label + '</span></div>';
       const tmplHtml =
         tmplRow(isChecked('Standard template'), 'Standard template') +
