@@ -719,6 +719,8 @@ async function token() {
 
 // ── 페이지네이션 전체 조회 헬퍼 (기존 .value 접근 호환) ──
 async function apiAll(path) {
+  // SharePoint 기본 페이지 크기(200건)보다 크게 요청해서 왕복 횟수를 줄임 (데이터 누락 없이 전량은 그대로 다 읽음)
+  if (!/[?&]\$top=/.test(path)) path += (path.includes('?') ? '&' : '?') + '$top=999';
   let items = [], url = path;
   while(url) {
     const d = await api(url);
@@ -985,7 +987,7 @@ async function loadMyList() {
   const tbody = document.getElementById('list-body');
   dynLoadStart('계약 데이터 불러오는 중');
   try {
-    const data = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500');
+    const data = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500');
     const mine = data.value
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
@@ -1002,10 +1004,10 @@ async function loadApprovalQueue() {
   try {
     const myEmail = (user.email||user.username||'').toLowerCase();
     const [apprData, reqData] = await Promise.all([
-      api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999&$orderby=Id desc'),
-      api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=999&$orderby=Id desc')
+      apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999&$orderby=Id desc'),
+      apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=999&$orderby=Id desc')
     ]);
-    console.log('[결재함] nextLink:', apprData['@odata.nextLink']?'있음':'없음');
+    console.log('[결재함] 결재이력 전체 건수(전량 조회):', apprData.value.length);
     const reqMap = {};
     reqData.value.forEach(function(r){ reqMap[r.id] = r.fields; });
     const myEmailAlt = (user.username||'').toLowerCase(); // MSAL username = email
@@ -1020,14 +1022,7 @@ async function loadApprovalQueue() {
     const _sccMap = _sccRaw.reduce(function(acc,i){var rid=String(i.fields.RequestID);if(!acc[rid]||i.fields.ApprovalOrder<acc[rid].fields.ApprovalOrder)acc[rid]=i;return acc;},{});
     let mine = Object.values(_sccMap).sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
     console.log('[결재함] 내 대기 항목:', mine.length);
-    // 페이지네이션 처리 (500건 초과 시)
-    let nextLink = apprData['@odata.nextLink'];
-    while(nextLink) {
-      const more = await api(nextLink.replace('https://graph.microsoft.com/v1.0',''));
-      more.value.filter(i=>matchEmail(i.fields.ApproverEmail)&&(i.fields.Status||'').trim()==='대기')
-        .forEach(i=>mine.push(i));
-      nextLink = more['@odata.nextLink']||null;
-    }
+    // (apiAll이 이미 전량을 페이지네이션해서 가져오므로, 별도 보완 조회 불필요)
     mine.sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
     if (!mine.length) { dynLoadEnd(); pgSet('appr', [], null, '결재 대기 항목이 없습니다.', 7); return; }
     const rows = mine.map(function(item) {
@@ -1813,7 +1808,7 @@ async function verifyFileHash() {
     
     // 2. ApprovalRecords에서 파일명으로 검색
     const fileName = file.name;
-    const records = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
+    const records = await apiAll('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
     
     // 파일명 매칭 (원본 파일명 또는 저장 파일명)
     const matched = records.value.find(r =>
@@ -1876,7 +1871,7 @@ async function exportAdminExcel() {
   // 결재 이력 일괄 조회
   loading(true, '📊 Excel 생성 중...', '결재 이력 조회 중입니다. 잠시만 기다려주세요.');
   try {
-    const apprAll = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999');
+    const apprAll = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=999');
     const apprMap = {};
     (apprAll.value || []).forEach(a => {
       const rid = String(a.fields.RequestID);
@@ -1887,7 +1882,7 @@ async function exportAdminExcel() {
     // Hash 조회
     const hashMap = {};
     try {
-      const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
+      const hashData = await apiAll('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
       (hashData.value || []).forEach(h => {
         const m = (h.fields.Title||'').match(/Contract #(\d+)/);
         if (m) hashMap[m[1]] = h.fields.FileHash_SHA256 || '';
@@ -2082,7 +2077,7 @@ async function loadAdminList() {
   dynLoadStart('계약 데이터 불러오는 중');
   try {
     if (!allContractsCache.length) {
-      const data = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500');
+      const data = await apiAll('/sites/' + siteId + '/lists/' + LIST_REQ + '/items?$expand=fields&$top=500');
       allContractsCache = data.value.sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     }
     let items = allContractsCache;
@@ -2099,7 +2094,7 @@ async function loadAdminList() {
     // ApprovalRecords에서 hash 맵 생성
     let hashMap = {};
     try {
-      const hashData = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
+      const hashData = await apiAll('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$top=500');
       // Title 형식: "Contract #<SP_item_id> - <파일명>" 으로 저장됨
       (hashData.value || []).forEach(h => {
         const title = h.fields.Title || '';
@@ -3002,7 +2997,7 @@ async function loadUnifiedBadge() {
   let total = 0;
   await Promise.all(_UNIFIED_SYSTEMS.map(async sys => {
     try {
-      const data = await api('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500');
+      const data = await apiAll('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500');
       total += data.value.filter(i => (i.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && (i.fields.Status||'').trim() === '대기').length;
     } catch(e) {}
   }));
@@ -3030,8 +3025,8 @@ async function loadUnifiedData() {
   const results = await Promise.all(_UNIFIED_SYSTEMS.map(async sys => {
     try {
       const [apprData, reqData] = await Promise.all([
-        api('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500'),
-        api('/sites/'+siteId+'/lists/'+sys.reqList+'/items?$expand=fields&$top=500'),
+        apiAll('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500'),
+        apiAll('/sites/'+siteId+'/lists/'+sys.reqList+'/items?$expand=fields&$top=500'),
       ]);
       const reqMap = {};
       reqData.value.forEach(r => { reqMap[r.id] = r.fields; });
@@ -3147,7 +3142,7 @@ async function uniConfirmApproval() {
     if (action === '반려') {
       await api('/sites/'+siteId+'/lists/'+lists.req+'/items/'+reqId, 'PATCH', {fields:{Status:'반려'}});
     } else {
-      const all = await api('/sites/'+siteId+'/lists/'+lists.apr+'/items?$expand=fields&$top=500');
+      const all = await apiAll('/sites/'+siteId+'/lists/'+lists.apr+'/items?$expand=fields&$top=500');
       const next = all.value.filter(i => Number(i.fields.RequestID)===Number(reqId) && (i.fields.Status||'').trim()==='대기(잠김)')
                             .sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
       if (next.length) await api('/sites/'+siteId+'/lists/'+lists.apr+'/items/'+next[0].id, 'PATCH', {fields:{Status:'대기'}});
