@@ -697,9 +697,7 @@ let allContractsCache = [];
 async function signIn() {
   try {
     if (window !== window.top) { window.open(window.location.href, '_blank'); return; }
-    const r = await msal.loginPopup({ scopes: SCOPES });
-    msal.setActiveAccount(r.account);
-    await boot(r.account);
+    await msal.loginRedirect({ scopes: SCOPES });
   } catch(e) { showLoginError(e.message); }
 }
 function signOut() { msal.logoutRedirect(); }
