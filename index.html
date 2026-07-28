@@ -1798,7 +1798,7 @@ async function processApprovedContract(reqId) {
           ContractTitle: f.Title || '',
           ApprovedFolderPath: uploadedItem ? uploadedItem.webUrl : '',
         }
-      }, 4);
+      }, 2);
     } catch(e) {
       // 여러 번 재시도해도 실패한 경우에만 (드문 케이스) — 조용히 넘기지 않고 눈에 띄게 경고
       console.error('ApprovalRecords 기록 실패(재시도 4회 후):', e.message);
