@@ -1354,7 +1354,7 @@ async function printApprovalDoc(reqId) {
     const aprs = (aprData.value || []).filter(a => String(a.fields.RequestID) === String(reqId)).sort((a,b) => (a.fields.ApprovalOrder||0)-(b.fields.ApprovalOrder||0));
 
     const now = new Date();
-    const nowStr = now.toLocaleDateString('ko-KR') + ' ' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    const nowStr = now.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'}) + ' ' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'});
 
     // 출력용 HTML 생성
     const printHtml = `<!DOCTYPE html>
