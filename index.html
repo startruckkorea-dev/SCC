@@ -2112,8 +2112,8 @@ async function exportAdminExcel() {
     }
 
     XLSX.utils.book_append_sheet(wb, ws, 'SCC 신청 목록');
-    const now = new Date();
-    const dateStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+    const now = new Date(new Date().getTime() + 9*3600*1000); // KST
+    const dateStr = now.getUTCFullYear() + String(now.getUTCMonth()+1).padStart(2,'0') + String(now.getUTCDate()).padStart(2,'0') + '_' + String(now.getUTCHours()).padStart(2,'0') + String(now.getUTCMinutes()).padStart(2,'0');
     XLSX.writeFile(wb, 'SCC_Export_' + dateStr + '.xlsx');
   } catch(e) {
     alert('Excel 생성 실패: ' + e.message);
@@ -2996,7 +2996,7 @@ function openUniDetail(apprId) {
   const d = _uniCache[apprId]; if(!d) return;
   const { sys, reqId, rf, apprList } = d;
   const sc = {'대기':'#7d5700','승인':'#107c10','반려':'#a4262c','대기(잠김)':'#605e5c','승인완료':'#107c10'};
-  const fmt = s => { if(!s)return'-'; const v=new Date(s); return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0')+' '+String(v.getHours()).padStart(2,'0')+':'+String(v.getMinutes()).padStart(2,'0'); };
+  const fmt = s => { if(!s)return'-'; const v=new Date(new Date(s).getTime()+9*3600*1000); return v.getUTCFullYear()+'-'+String(v.getUTCMonth()+1).padStart(2,'0')+'-'+String(v.getUTCDate()).padStart(2,'0')+' '+String(v.getUTCHours()).padStart(2,'0')+':'+String(v.getUTCMinutes()).padStart(2,'0'); };
   let rows = '';
   if(sys.key==='GW')       rows='<tr><td style="color:#605e5c;width:110px;padding:5px 0;border-bottom:1px solid #f3f2f1">Source</td><td style="padding:5px 0;border-bottom:1px solid #f3f2f1">'+(rf.Source||'-')+'</td></tr><tr><td style="color:#605e5c;padding:5px 0;border-bottom:1px solid #f3f2f1">Type</td><td style="padding:5px 0;border-bottom:1px solid #f3f2f1">'+(rf.GoodwillType||'-')+'</td></tr>';
   else if(sys.key==='BP')  rows='<tr><td style="color:#605e5c;width:110px;padding:5px 0;border-bottom:1px solid #f3f2f1">BP Type</td><td style="padding:5px 0;border-bottom:1px solid #f3f2f1">'+(rf.BPType||'-')+'</td></tr><tr><td style="color:#605e5c;padding:5px 0;border-bottom:1px solid #f3f2f1">Sub Category</td><td style="padding:5px 0;border-bottom:1px solid #f3f2f1">'+(rf.SubCategory||'-')+'</td></tr>';
@@ -3118,7 +3118,7 @@ async function loadUnifiedData() {
         const apprList = (allApprMap[String(f.RequestID)]||[]).sort((a,b) => (a.ApprovalOrder||0)-(b.ApprovalOrder||0));
         // 캐시에 저장
         _uniCache[item.id] = { sys, reqId: f.RequestID, rf, apprList };
-        const fmt = s => { if(!s)return'-'; const v=new Date(s); return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0')+' '+String(v.getHours()).padStart(2,'0')+':'+String(v.getMinutes()).padStart(2,'0'); };
+        const fmt = s => { if(!s)return'-'; const v=new Date(new Date(s).getTime()+9*3600*1000); return v.getUTCFullYear()+'-'+String(v.getUTCMonth()+1).padStart(2,'0')+'-'+String(v.getUTCDate()).padStart(2,'0')+' '+String(v.getUTCHours()).padStart(2,'0')+':'+String(v.getUTCMinutes()).padStart(2,'0'); };
         let cols = '';
         if(sys.key==='GW')       cols='<td>'+(rf.Source||'-')+'</td><td>'+(rf.GoodwillType||'-')+'</td><td>'+(rf.RequesterEmail||'-')+'</td><td>'+fmt(rf.RequestDate)+'</td>';
         else if(sys.key==='BP')  cols='<td><span class="sys-badge '+sys.color+'">'+(rf.BPType||'-')+'</span></td><td>'+(rf.SubCategory||'-')+'</td><td>'+(rf.RequesterEmail||'-')+'</td><td>'+fmt(rf.RequestDate)+'</td>';
