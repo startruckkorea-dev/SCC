@@ -786,7 +786,9 @@ function logAction(systemName, action, detail) {
 }
 async function api(path, method='GET', body=null) {
   const t = await token();
-  const opts = { method, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' } };
+  // Prefer 헤더: 인덱싱되지 않은 컬럼으로 $filter를 걸 때 리스트 뷰 임계치(5,000건)에 막히지 않도록 허용.
+  // BP·FA·GA·CTR_PR 등 다른 시스템과 동일한 설정이며, 필터를 쓰지 않는 호출에는 아무 영향이 없다.
+  const opts = { method, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly' } };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(GRAPH + path, opts);
   if (!res.ok) throw new Error((await res.json())?.error?.message || res.status);
@@ -981,7 +983,18 @@ function onPersonChange(idx) {
 async function checkApprovalBadge() {
   if (!siteId) return;
   try {
-    const data = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=500')
+    // 60초마다 도는 폴링이라 대기 건만 서버에서 걸러 온다.
+    // 계약 결재는 최대 8차까지 쌓여 Approvals 건수가 신청 건수의 여러 배가 되므로,
+    // 전량을 가져와 브라우저에서 거르면 시간이 갈수록 부하가 선형으로 늘어난다.
+    // 필터가 실패하는 환경(컬럼 타입·인덱싱 등)에서도 배지가 멈추지 않도록 기존 전량 조회로 폴백한다.
+    const base = '/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields';
+    let data;
+    try {
+      data = await apiAll(base + "&$filter=fields/Status eq '대기'&$top=500");
+    } catch (fe) {
+      console.warn('[Badge] 서버 필터 조회 실패, 전량 조회로 폴백:', fe.message);
+      data = await apiAll(base + '&$top=500');
+    }
     const mine = data.value.filter(i =>
       ((i.fields.ApproverEmail||'').toLowerCase() === (user.email||'').toLowerCase() || (i.fields.ApproverEmail||'').toLowerCase() === (user.username||'').toLowerCase()) && (i.fields.Status||'').trim() === '대기'
     );
