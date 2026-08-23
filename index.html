@@ -1663,7 +1663,8 @@ async function processApprovedContract(reqId) {
   // 1. 계약 정보 가져오기
   const reqData = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
   const f = reqData.fields;
-  const approvedDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  // KST(+9) 기준. UTC 그대로 쓰면 00~09시 결재가 전날로 기록된다.
+  const approvedDate = new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10);
 
   // 워터마크 텍스트
   const wmText = `APPROVED - ${approvedDate} | Contract #${reqId} | Approved by: STK Contract Checklist`;
