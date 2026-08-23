@@ -2598,10 +2598,6 @@ async function submitForm() {
   if (submitBtn && submitBtn.disabled) return; // 중복 제출 방지
 
   // 버튼 복구 헬퍼
-  function resetBtn(msg) {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '제출'; submitBtn.style.background = ''; }
-    if (msg) alert(msg);
-  }
 
   // validation 먼저 (버튼 disable 전)
   const checks = [
@@ -3081,15 +3077,6 @@ async function loadUnifiedBadge() {
   if(badge) { badge.textContent = total; badge.style.display = total > 0 ? 'inline-block' : 'none'; }
 }
 
-async function openUnifiedAppr() {
-  document.getElementById('unified-modal').classList.add('open');
-  document.getElementById('unified-body').innerHTML = '';
-  await loadUnifiedData();
-}
-function closeUnifiedAppr() {
-  document.getElementById('unified-modal').classList.remove('open');
-  closeUniDetail();
-}
 
 async function loadUnifiedData() {
   if (!siteId || !user) return;
