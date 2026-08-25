@@ -2270,7 +2270,7 @@ async function showDetail(reqId) {
         const stdDetail = stdRaw ? ' &nbsp;→&nbsp; Standard contract: ' + yn(stdVal) + (stdNote ? ' &nbsp;( ' + stdNote[1] + ' )' : '') : '';
         html += row('Is personal Information disclosed?', yn(f.PersonalInfo) + stdDetail);
       }
-      html += row('Signing Party Designation (SMR)', yn(f.SMRCompliance));
+      html += row('Signing Party Designation<br><span style="font-size:.88em;opacity:.72;white-space:nowrap">(SMR)</span>', yn(f.SMRCompliance));
       if (f.FinalSignOff) html += row('Final signing off', '<span style="font-size:13px">' + f.FinalSignOff + '</span>');
     }
 
