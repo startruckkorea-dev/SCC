@@ -1420,10 +1420,12 @@ async function printApprovalDoc(reqId) {
   .header .meta{text-align:right;font-size:10px;opacity:.75}
   .chop-notice{background:#f0f4ff;border-left:3px solid #1d4ed8;border-radius:4px;padding:10px 14px;margin-bottom:8px;font-size:10px;color:#1e3a5f;line-height:1.7}
   /* Chop 처리 후 STK B2B 저장 경로 — 인쇄물에서도 눈에 띄되 본문을 밀지 않도록 압축해서 표기 */
-  .chop-path{border-left:2px solid #1d4ed8;padding:0 0 0 9px;margin-bottom:12px;font-size:9px;color:#1e3a5f;line-height:1.45}
-  .chop-path .cp-title{font-weight:700;color:#1d4ed8;font-size:9.5px;margin-bottom:2px}
-  .chop-path .cp-title a{color:#1d4ed8}
-  .chop-path .cp-loc{color:#8595aa}
+  /* 저장 경로는 다른 시스템의 주의 안내와 같은 노란 배너 배색을 쓴다 (#fff4ce / #f0d9a0 / #7d5700) */
+  .chop-path{background:#fff4ce;border:1px solid #f0d9a0;border-radius:4px;padding:8px 12px;margin-bottom:12px;font-size:9px;color:#7d5700;line-height:1.5}
+  .chop-path .cp-title{font-weight:700;color:#7d5700;font-size:9.5px;margin-bottom:3px}
+  .chop-path .cp-title a{color:#8a5a00}
+  .chop-path .cp-req{color:#a4262c;font-weight:700}
+  .chop-path .cp-loc{color:#9d7a3d}
   .section{margin-bottom:12px}
   .sec-title{font-size:10px;font-weight:700;color:#0078d4;border-bottom:1px solid #c7e0f4;padding-bottom:3px;margin-bottom:7px}
   .row{display:flex;gap:8px;margin-bottom:3px}
@@ -1444,7 +1446,7 @@ async function printApprovalDoc(reqId) {
 </div>
 <div class="chop-notice">본 문서는 Final signing off 선택 조항에서 <b>signatures and corporate chop</b> 또는 <b>chop only</b> 조건을 선택하여 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역이며, 그 외의 목적으로는 사용이 불가합니다.<br>모든 결재 승인 처리 이후, 해당 내용 출력하여 <b>Accounting 부서에 증빙 제출 → Chop 처리</b> 진행하시면 됩니다.</div>
 <div class="chop-path">
-  <div class="cp-title">Chop 처리 후 <a href="https://startruckkorea.sharepoint.com/sites/STK-NAS/STK/Forms/AllItems.aspx?id=%2Fsites%2FSTK%2DNAS%2FSTK%2FSTK%2DShared%2F6%2E%20STK%2Ddirected%20B2B&viewid=c2220a52%2Df1e8%2D4a3e%2Dafea%2D519c4cf06c91" target="_blank" rel="noopener">STK-NAS &gt; STK B2B</a> 저장 (필수)</div>
+  <div class="cp-title">⚠ Chop 처리 후 <a href="https://startruckkorea.sharepoint.com/sites/STK-NAS/STK/Forms/AllItems.aspx?id=%2Fsites%2FSTK%2DNAS%2FSTK%2FSTK%2DShared%2F6%2E%20STK%2Ddirected%20B2B&viewid=c2220a52%2Df1e8%2D4a3e%2Dafea%2D519c4cf06c91" target="_blank" rel="noopener">STK-NAS &gt; STK B2B</a> 저장 <span class="cp-req">(필수)</span></div>
   <div>① 법인인감 · 사용인감 로그 기록 &nbsp;<span class="cp-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Document Log</span></div>
   <div>② 인감 날인 스캔본 저장 &nbsp;<span class="cp-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Approved application &amp; document &amp; log &gt; Approved application and document</span></div>
 </div>
