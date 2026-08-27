@@ -174,6 +174,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .chop-side .cs-item:last-child { margin-bottom:0; }
 .chop-side .cs-item b { display:block; margin-bottom:2px; }
 .chop-side .cs-loc { color:#8595aa; word-break:keep-all; overflow-wrap:anywhere; font-size:.7rem; line-height:1.45; }
+/* 승인내역 출력은 Chop 안내 바로 아래(사이드 패널 안)에 둔다. 안내를 읽고 바로 누르는 흐름. */
+.chop-side .cs-print { width:100%; margin-top:14px; background:#0078d4; color:#fff; border:none; border-radius:6px;
+  padding:11px 14px; font-size:.82rem; font-weight:700; cursor:pointer; font-family:inherit; }
+.chop-side .cs-print:hover { background:#106ebe; }
+/* 승인·반려는 본문(결재 이력) 아래 우측에만 놓아 사이드 패널 폭을 침범하지 않게 한다. */
+.detail-actions { display:flex; gap:8px; justify-content:flex-end; padding:12px 32px;
+  border-top:1px solid #edebe9; background:#fff; flex-shrink:0; }
+@media (max-width:1100px){ .detail-actions { padding:12px 32px; } }
 @media (max-width:1100px){
   #detail-modal.has-side .modal-box { max-width:680px; }
   .detail-split { flex-direction:column; }
@@ -2440,12 +2448,8 @@ async function showDetail(reqId) {
     const actionBar = document.getElementById('modal-action-bar');
     if (actionBar) {
       const mp = window._pendingApproverBtn;
-      // 버튼이 화면 폭만큼 늘어지면 보기 안 좋아 고정폭으로 두고 우측에 모은다.
-      // 출력 버튼은 항상 왼쪽. 결재할 차례가 있을 때만 스페이서로 승인·반려를 오른쪽으로 민다.
-      // justify-content:flex-end 를 쓰면 버튼이 하나뿐일 때 혼자 오른쪽 구석에 붙어 어색하다.
-      actionBar.style.cssText = 'display:flex;gap:8px;padding:12px 32px;border-top:1px solid #edebe9;background:#fff;flex-shrink:0;align-items:center';
-      // Chop 안내는 오른쪽 사이드 패널로 옮긴다. 하단은 출력·승인·반려 버튼만 두어
-      // 결재 버튼이 나올 때도 상세 내용 보이는 공간이 줄지 않게 한다.
+      // 승인내역 출력은 사이드 패널의 Chop 안내 아래에 둔다 (안내를 읽고 바로 누르는 흐름).
+      // 승인·반려만 본문 아래 우측에 남겨, 사이드 패널 폭을 침범하지 않게 한다.
       const sideEl = document.getElementById('modal-side');
       if (sideEl) {
         sideEl.style.display = 'block';
@@ -2457,17 +2461,19 @@ async function showDetail(reqId) {
             '<div class="cs-box-t">Chop 처리 후 <a href="https://startruckkorea.sharepoint.com/sites/STK-NAS/STK/Forms/AllItems.aspx?id=%2Fsites%2FSTK%2DNAS%2FSTK%2FSTK%2DShared%2F6%2E%20STK%2Ddirected%20B2B&viewid=c2220a52%2Df1e8%2D4a3e%2Dafea%2D519c4cf06c91" target="_blank" rel="noopener" style="color:#1d4ed8">STK-NAS &gt; STK B2B</a> 저장 <span style="color:#a4262c">(필수)</span></div>' +
             '<div class="cs-item"><b>① 법인인감 · 사용인감 로그 기록</b><span class="cs-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Document Log</span></div>' +
             '<div class="cs-item"><b>② 인감 날인 스캔본 저장</b><span class="cs-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Approved application &amp; document &amp; log &gt; Approved application and document</span></div>' +
-          '</div>';
+          '</div>' +
+          '<button class="cs-print" onclick="printApprovalDoc(' + reqId + ')">승인내역 출력</button>';
       }
-      const BTN = 'border-radius:6px;padding:10px 22px;font-size:.86rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;min-width:118px';
-      const printBtn = '<button onclick="printApprovalDoc(' + reqId + ')" style="background:#0078d4;color:#fff;border:none;' + BTN + '">승인내역 출력</button>';
+      // 인라인 style 이 .btn-approve/.btn-reject 클래스보다 우선하므로 색도 여기서 함께 지정한다.
+      const BTN = 'border:none;border-radius:6px;padding:10px 22px;font-size:.86rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;min-width:118px;color:#fff';
       if (mp) {
-        actionBar.innerHTML = printBtn +
-          '<span style="flex:1"></span>' +
-          '<button onclick="showConfirmWithData(' + mp.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="' + BTN + '">✅ 승인</button>' +
-          '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="' + BTN + '">❌ 반려</button>';
+        actionBar.style.display = 'flex';
+        actionBar.innerHTML =
+          '<button onclick="showConfirmWithData(' + mp.id + ',\'승인\',' + reqId + ')" class="btn-approve" style="' + BTN + ';background:#107c10">✅ 승인</button>' +
+          '<button onclick="showConfirm(' + mp.id + ',\'반려\',' + reqId + ')" class="btn-reject" style="' + BTN + ';background:#a4262c">❌ 반려</button>';
       } else {
-        actionBar.innerHTML = printBtn;
+        actionBar.style.display = 'none';
+        actionBar.innerHTML = '';
       }
     }
 
@@ -3312,10 +3318,12 @@ function _wdBtn(itemId, aprList, reqList, status) {
       <div class="modal-title" style="margin:0">신청 상세 내용</div>
     </div>
     <div class="detail-split">
-      <div id="modal-content" style="overflow-y:auto;flex:1;min-width:0;padding:20px 32px"></div>
+      <div style="display:flex;flex-direction:column;flex:1;min-width:0">
+        <div id="modal-content" style="overflow-y:auto;flex:1;padding:20px 32px"></div>
+        <div id="modal-action-bar" class="detail-actions" style="display:none"></div>
+      </div>
       <div id="modal-side" class="detail-side chop-side" style="display:none"></div>
     </div>
-    <div id="modal-action-bar" style="display:none;padding:14px 32px;border-top:1px solid #edebe9;background:#fff;flex-shrink:0;gap:10px;align-items:center"></div>
   </div>
 </div>
 
