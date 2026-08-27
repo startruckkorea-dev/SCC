@@ -454,7 +454,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <div class="file-row"><input type="file" id="att2" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att2')">Reset</button></div>
           <div class="file-row"><input type="file" id="att3" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att3')">Reset</button></div>
           <div class="file-row"><input type="file" id="att4" onchange="checkFileSize(this)"><button class="btn-file-reset" onclick="rf('att4')">Reset</button></div>
-          <div style="font-size:11px;color:#605e5c;margin-top:4px">※ 파일 1개당 최대 80MB / 전체 합계 최대 80MB</div>
+          <div id="file-limit-note" style="font-size:11px;color:#605e5c;margin-top:4px"></div>
         </div>
       </div>
 
@@ -526,9 +526,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="comp-row">
         <div class="comp-label">Final signing off?</div>
         <div class="comp-opts sign-opts">
-          <label><input type="checkbox" value="authorized person's signatures" onchange="updateCFO_CEO()"> authorized person's signatures</label>
-          <label><input type="checkbox" value="signatures and corporate chop" onchange="updateCFO_CEO()"> signatures and corporate chop</label>
-          <label><input type="checkbox" value="chop only" onchange="updateCFO_CEO()"> chop only</label>
+          <label><input type="checkbox" value="authorized person's signatures" onchange="updateSignOffBlocks()"> authorized person's signatures</label>
+          <label><input type="checkbox" value="signatures and corporate chop" onchange="updateSignOffBlocks()"> signatures and corporate chop</label>
+          <label><input type="checkbox" value="chop only" onchange="updateSignOffBlocks()"> chop only</label>
         </div>
       </div>
 
@@ -735,7 +735,7 @@ async function token() {
 
 // ── 페이지네이션 전체 조회 헬퍼 (기존 .value 접근 호환) ──
 async function apiAll(path) {
-  // SharePoint 기본 페이지 크기(200건)보다 크게 요청해서 왕복 횟수를 줄임 (데이터 누락 없이 전량은 그대로 다 읽음)
+  // SharePoint 기본 페이지 크기는 200건이라 $top=999 로 올려 왕복 횟수를 줄인다. nextLink 를 끝까지 따라가므로 누락 없이 전량을 읽는다.
   if (!/[?&]\$top=/.test(path)) path += (path.includes('?') ? '&' : '?') + '$top=999';
   let items = [], url = path;
   while(url) {
@@ -810,6 +810,18 @@ function logAction(systemName, action, detail) {
     } catch(e) { console.warn('[Log] 기록 실패(무시됨):', e.message); }
   })();
 }
+// ── 첨부파일 용량 제한 ─────────────────────────────────────────────
+// 화면 안내 문구도 같은 상수에서 채운다 (아래 setFileLimitNote).
+// 검사와 안내 문구가 같은 값을 보도록 한 곳에서만 정의한다.
+// 예전에는 검사 4곳·안내 5곳에 80 이 각각 박혀 있어, 값을 바꾸면 일부만 반영될 위험이 있었다.
+const MAX_FILE_MB = 80;
+const MAX_FILE_MSG = `최대 허용 용량(${MAX_FILE_MB}MB)`;
+function setFileLimitNote() {
+  const el = document.getElementById('file-limit-note');
+  if (el) el.textContent = `※ 파일 1개당 최대 ${MAX_FILE_MB}MB / 전체 합계 최대 ${MAX_FILE_MB}MB`;
+}
+document.addEventListener('DOMContentLoaded', setFileLimitNote);
+
 // ── 화면 출력용 이스케이프 ──────────────────────────────────────────
 // SharePoint 는 저장값을 그대로 돌려주므로, 사용자가 입력한 <img onerror=...> 같은 값이
 // innerHTML 로 들어가면 그대로 실행된다. 자유 입력 필드는 반드시 이 함수를 거쳐야 한다.
@@ -848,7 +860,11 @@ async function api(path, method='GET', body=null, _retry=0) {
 }
 
 // 동시/연속 처리 시 SharePoint 스로틀링(429/503 등)으로 실패할 수 있는 중요 쓰기 작업용 재시도 래퍼
-async function apiWithRetry(path, method='GET', body=null, maxRetries=4) {
+// ApprovalRecords(무결성 기록) 쓰기 재시도 횟수. 최초 1회 + 재시도 RECORD_RETRIES 회.
+// 2026-07-28 에 4회에서 2회로 줄였는데 호출부만 고치고 기본값·로그 문구가 남아 있었다.
+// 값이 갈리지 않도록 여기 한 곳에서만 정한다.
+const RECORD_RETRIES = 2;
+async function apiWithRetry(path, method='GET', body=null, maxRetries=RECORD_RETRIES) {
   let lastErr;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -1866,10 +1882,10 @@ async function processApprovedContract(reqId) {
           ContractTitle: f.Title || '',
           ApprovedFolderPath: uploadedItem ? uploadedItem.webUrl : '',
         }
-      }, 2);
+      }, RECORD_RETRIES);
     } catch(e) {
       // 여러 번 재시도해도 실패한 경우에만 (드문 케이스) — 조용히 넘기지 않고 눈에 띄게 경고
-      console.error('ApprovalRecords 기록 실패(재시도 4회 후):', e.message);
+      console.error(`ApprovalRecords 기록 실패(${RECORD_RETRIES + 1}회 시도 후):`, e.message);
       alert(
         `⚠️ 계약서 승인/파일 저장/워터마크는 정상 완료됐지만,\n` +
         `SHA-256 무결성 기록만 저장에 실패했습니다 (Contract #${reqId}).\n\n` +
@@ -2541,8 +2557,8 @@ function onPersonal(r) {
 }
 function rf(id) { const el = document.getElementById(id); if (el) el.value = ''; }
 
-// Final signing off 체크박스 변경 시 5,6차 결재자 블록 표시/숨김
-function updateCFO_CEO() { updateApproverBlocks(); }
+// Final signing off 체크 상태에 따라 CFO·RD 블록 표시/숨김 (CEO 단계는 2026-07-25 제거)
+function updateSignOffBlocks() { updateApproverBlocks(); }
 
 function updateApproverBlocks() {
   const isSales = (document.getElementById('sel-type').value || '') === 'Sales';
@@ -2643,8 +2659,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkFileSize(input) {
   if (!input.files[0]) return;
   const mb = input.files[0].size / 1024 / 1024;
-  if (mb > 80) {
-    alert(input.files[0].name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(80MB)을 초과합니다.');
+  if (mb > MAX_FILE_MB) {
+    alert(input.files[0].name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 ' + MAX_FILE_MSG + '을 초과합니다.');
     input.value = '';
   }
 }
@@ -2658,8 +2674,8 @@ function checkPdfFile(input) {
     return;
   }
   const mb = file.size / 1024 / 1024;
-  if (mb > 80) {
-    alert(file.name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(80MB)을 초과합니다.');
+  if (mb > MAX_FILE_MB) {
+    alert(file.name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 ' + MAX_FILE_MSG + '을 초과합니다.');
     input.value = '';
   }
 }
@@ -2686,19 +2702,18 @@ async function submitForm() {
   if (!periodOk) { alert('Contract Period type을 선택해주세요.'); return; }
   if (!document.getElementById('p-start').value) { alert('Contract Period start date가 필요합니다.'); return; }
   if (!document.getElementById('f-doc').files.length) { alert('Contract document를 첨부해주세요.'); return; }
-  // 파일 용량 검증 (파일당 최대 80MB, 전체 합계 최대 80MB)
+  // 파일 용량 검증 (파일당·전체 합계 모두 MAX_FILE_MB 기준)
   const _fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
-  const MAX_MB = 80;
   let _totalMB = 0;
   for (const fid of _fileIds) {
     const el = document.getElementById(fid);
     if (el && el.files[0]) {
       const mb = el.files[0].size / 1024 / 1024;
-      if (mb > MAX_MB) { el.value = ''; alert(el.files[0]?.name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 최대 허용 용량(80MB)을 초과합니다.\n파일을 다시 선택해주세요.'); return; }
+      if (mb > MAX_FILE_MB) { el.value = ''; alert(el.files[0]?.name + '\n파일 크기(' + mb.toFixed(1) + 'MB)가 ' + MAX_FILE_MSG + '을 초과합니다.\n파일을 다시 선택해주세요.'); return; }
       _totalMB += mb;
     }
   }
-  if (_totalMB > MAX_MB) { alert('첨부파일 전체 합계(' + _totalMB.toFixed(1) + 'MB)가 최대 허용 용량(80MB)을 초과합니다.'); return; }
+  if (_totalMB > MAX_FILE_MB) { alert('첨부파일 전체 합계(' + _totalMB.toFixed(1) + 'MB)가 ' + MAX_FILE_MSG + '을 초과합니다.'); return; }
   if (!document.getElementById('a1-email').value) { alert('1차 결재자 (Line Manager)를 지정해주세요.'); return; }
 
   // validation 통과 후 버튼 disable
@@ -2814,9 +2829,9 @@ async function submitForm() {
     } catch(fe) { console.error('Drive error:', fe); }
 
     // 결재자 등록
-    // 4, 5차 (CFO/CEO) 조건: Final signing off에서 "corporate chop" 또는 "chop only" 선택 시
+    // CFO·RD 추가 조건: Final signing off 에서 "corporate chop" 또는 "chop only" 선택 시
     const signOffVal = (signChecked.join(' ')).toLowerCase();
-    const needCFO_CEO = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
+    const needChopApprovers = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
 
     const isSales = document.getElementById('sel-type').value === 'Sales';
     const approvers = [
@@ -2829,7 +2844,7 @@ async function submitForm() {
     if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
     const acctOrder = isSales ? 5 : 4;
     approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Head)' });
-    if (needCFO_CEO) {
+    if (needChopApprovers) {
       // chop 조건: CFO → RD 순으로 추가 (CEO 결재 라인 제거됨)
       approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
       approvers.push({ ...ARD, order: acctOrder+2, role: (acctOrder+2)+'차결재자(RD)' });
