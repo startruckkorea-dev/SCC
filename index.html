@@ -1392,7 +1392,15 @@ async function printApprovalDoc(reqId) {
   .header h1{margin:0;font-size:14px;font-weight:700}
   .header .sub{font-size:10px;opacity:.7;margin-top:3px}
   .header .meta{text-align:right;font-size:10px;opacity:.75}
-  .chop-notice{background:#f0f4ff;border-left:3px solid #1d4ed8;border-radius:4px;padding:10px 14px;margin-bottom:14px;font-size:10px;color:#1e3a5f;line-height:1.7}
+  .chop-notice{background:#f0f4ff;border-left:3px solid #1d4ed8;border-radius:4px;padding:10px 14px;margin-bottom:8px;font-size:10px;color:#1e3a5f;line-height:1.7}
+  /* Chop 처리 후 STK B2B 저장 경로 — 인쇄물에서도 눈에 띄되 본문을 밀지 않도록 압축해서 표기 */
+  .chop-path{border:1px solid #c7d2e8;border-radius:4px;padding:9px 14px;margin-bottom:14px;font-size:9.5px;color:#1e3a5f;line-height:1.6}
+  .chop-path .cp-title{font-weight:700;color:#1d4ed8;font-size:10px;margin-bottom:6px;letter-spacing:.2px}
+  .chop-path .cp-item{display:flex;gap:7px;margin-bottom:5px}
+  .chop-path .cp-item:last-child{margin-bottom:0}
+  .chop-path .cp-no{font-weight:700;color:#1d4ed8;flex-shrink:0}
+  .chop-path .cp-label{font-weight:700}
+  .chop-path .cp-loc{color:#5b6b80;font-family:Consolas,'Courier New',monospace;font-size:9px;word-break:break-all}
   .section{margin-bottom:12px}
   .sec-title{font-size:10px;font-weight:700;color:#0078d4;border-bottom:1px solid #c7e0f4;padding-bottom:3px;margin-bottom:7px}
   .row{display:flex;gap:8px;margin-bottom:3px}
@@ -1412,6 +1420,11 @@ async function printApprovalDoc(reqId) {
   <div class="meta">출력일시: ${nowStr}<br>Contract #${reqId}</div>
 </div>
 <div class="chop-notice">본 문서는 Final signing off 선택 조항에서 <b>signatures and corporate chop</b> 또는 <b>chop only</b> 조건을 선택하여 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역이며, 그 외의 목적으로는 사용이 불가합니다.<br>모든 결재 승인 처리 이후, 해당 내용 출력하여 <b>Accounting 부서에 증빙 제출 → Chop 처리</b> 진행하시면 됩니다.</div>
+<div class="chop-path">
+  <div class="cp-title">📁 Chop 처리 후 STK B2B 저장 (필수)</div>
+  <div class="cp-item"><span class="cp-no">①</span><span><span class="cp-label">법인인감 · 사용인감 로그 기록</span><br><span class="cp-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Document Log</span></span></div>
+  <div class="cp-item"><span class="cp-no">②</span><span><span class="cp-label">인감 날인 스캔본 저장</span><br><span class="cp-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Approved application &amp; document &amp; log &gt; Approved application and document</span></span></div>
+</div>
 
 <div class="section">
   <div class="sec-title">기본 정보</div>
@@ -2413,7 +2426,16 @@ async function showDetail(reqId) {
     if (actionBar) {
       const mp = window._pendingApproverBtn;
       actionBar.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:14px 32px;border-top:1px solid #edebe9;background:#fff;flex-shrink:0';
-      const printRowHtml = '<div style="display:flex;align-items:center;gap:10px"><button onclick="printApprovalDoc(' + reqId + ')" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">승인내역 출력</button><span style="font-size:.72rem;color:#605e5c;line-height:1.5;flex:1;min-width:0">Final signing off에서 Chop 옵션 선택 후 전원 승인 완료 시, 출력하여 계약 서류와 함께 Accounting 부서에 증빙 제출 → Chop 처리</span></div>';
+      const printRowHtml = '<div style="display:flex;align-items:flex-start;gap:12px">' +
+        '<button onclick="printApprovalDoc(' + reqId + ')" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;align-self:flex-start">승인내역 출력</button>' +
+        '<div style="flex:1;min-width:0;font-size:.72rem;color:#605e5c;line-height:1.55">' +
+          '<div style="margin-bottom:7px">Final signing off에서 Chop 옵션 선택 후 전원 승인 완료 시, 출력하여 계약 서류와 함께 <b style="color:#323130">Accounting 부서에 증빙 제출 → Chop 처리</b></div>' +
+          '<div style="background:#f0f4ff;border-left:3px solid #1d4ed8;border-radius:4px;padding:8px 11px">' +
+            '<div style="font-weight:700;color:#1d4ed8;font-size:.7rem;margin-bottom:5px">📁 Chop 처리 후 STK B2B 저장 (필수)</div>' +
+            '<div style="display:flex;gap:7px;margin-bottom:4px"><span style="color:#1e3a5f;font-weight:600;flex-shrink:0">①</span><span style="color:#1e3a5f"><b>법인인감 · 사용인감 로그 기록</b><br><span style="color:#5b6b80">002._Accounting Accenture &gt; 2. Company chop request &gt; Document Log</span></span></div>' +
+            '<div style="display:flex;gap:7px"><span style="color:#1e3a5f;font-weight:600;flex-shrink:0">②</span><span style="color:#1e3a5f"><b>인감 날인 스캔본 저장</b><br><span style="color:#5b6b80">002._Accounting Accenture &gt; 2. Company chop request &gt; Approved application &amp; document &amp; log &gt; Approved application and document</span></span></div>' +
+          '</div>' +
+        '</div></div>';
       if (mp) {
         actionBar.innerHTML = printRowHtml +
           '<div style="display:flex;gap:10px">' +
