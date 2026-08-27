@@ -810,6 +810,19 @@ function logAction(systemName, action, detail) {
     } catch(e) { console.warn('[Log] 기록 실패(무시됨):', e.message); }
   })();
 }
+// ── 화면 출력용 이스케이프 ──────────────────────────────────────────
+// SharePoint 는 저장값을 그대로 돌려주므로, 사용자가 입력한 <img onerror=...> 같은 값이
+// innerHTML 로 들어가면 그대로 실행된다. 자유 입력 필드는 반드시 이 함수를 거쳐야 한다.
+// stripHtml 은 태그를 지운 뒤 &lt; 를 < 로 되돌리기 때문에 이 용도로는 쓸 수 없다.
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+// style="..." / value="..." 처럼 속성값 안에 넣을 때는 따옴표까지 막아야 한다.
+function escAttr(s) {
+  return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function api(path, method='GET', body=null, _retry=0) {
   const t = await token();
   // Prefer 헤더: 인덱싱되지 않은 컬럼으로 $filter를 걸 때 리스트 뷰 임계치(5,000건)에 막히지 않도록 허용.
@@ -1461,11 +1474,11 @@ async function printApprovalDoc(reqId) {
 
 <div class="section">
   <div class="sec-title">계약 정보</div>
-  <div class="row"><span class="label">Title of Contract</span><span class="value" style="color:${f.ContractTitle?'inherit':'#a19f9d'}">${f.ContractTitle||'(미입력)'}</span></div>
+  <div class="row"><span class="label">Title of Contract</span><span class="value" style="color:${f.ContractTitle?'inherit':'#a19f9d'}">${esc(f.ContractTitle||'(미입력)')}</span></div>
   <div class="row"><span class="label">Type</span><span class="value">${f.ContractCompanyType||'-'}</span></div>
   <div class="row"><span class="label">Contract Type</span><span class="value">${f.ContractType||'-'}</span></div>
-  <div class="row"><span class="label">Contract Partner</span><span class="value">${f.ContractPartner||'-'}</span></div>
-  <div class="row"><span class="label">Objective</span><span class="value">${(f.Objective||'-').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#58;/g,':').trim()}</span></div>
+  <div class="row"><span class="label">Contract Partner</span><span class="value">${esc(f.ContractPartner||'-')}</span></div>
+  <div class="row"><span class="label">Objective</span><span class="value">${esc((f.Objective||'-').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#58;/g,':').trim())}</span></div>
   <div class="row"><span class="label">Contract Value</span><span class="value">${f.ContractValue ? Number(f.ContractValue).toLocaleString('en-US') + ' ' + (f.Currency||'') : '-'}</span></div>
   <div class="row"><span class="label">Contract Period</span><span class="value">${f.PeriodType||'-'}${f.PeriodStart ? ' | ' + f.PeriodStart.substring(0,10) + ' ~ ' + (f.PeriodEnd ? f.PeriodEnd.substring(0,10) : 'No end') : ''}</span></div>
   <div class="row"><span class="label">Payment Term</span><span class="value">${f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-'}</span></div>
@@ -1498,7 +1511,7 @@ ${(()=>{
   let html = '<div class="section"><div class="sec-title">4. Compliance / Final Check</div>';
   if (f.BizTermsReviewed) html += '<div class="row"><span class="label">Business / commercial terms reviewed</span><span class="value">' + f.BizTermsReviewed.toUpperCase() + '</span></div>';
   if (f.DDPerformed) {
-    const ddDetail = f.DDId ? ' &nbsp;(DD ID: ' + f.DDId + ')' : '';
+    const ddDetail = f.DDId ? ' &nbsp;(DD ID: ' + esc(f.DDId) + ')' : '';
     html += '<div class="row"><span class="label">Is Compliance Due Diligence performed?</span><span class="value">' + f.DDPerformed.toUpperCase() + ddDetail + '</span></div>';
   }
   if (f.PersonalInfo) {
@@ -2230,7 +2243,7 @@ async function loadAdminList() {
       const f = item.fields;
       const hash = hashMap[String(item.id)] || '';
       const hashDisplay = hash ? '<span title="' + hash + '" style="font-family:monospace;font-size:.68rem;color:#605e5c;cursor:help">' + hash.substring(0,12) + '...</span>' : '<span style="color:#a19f9d;font-size:.75rem">-</span>';
-      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.ContractPartner||'-') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
+      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.ContractPartner||'-') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
     }, '조회 결과가 없습니다.', 9);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
@@ -2247,15 +2260,15 @@ async function showDetail(reqId) {
     // 상태 표시는 badge-* 클래스(목록과 동일)로 통일되어 색상 변수는 더 이상 사용하지 않는다.
 
     let html = sec('기본 정보') +
-      row('제목', f.Title) +
+      row('제목', esc(f.Title)) +
       row('신청자', f.RequesterEmail) +
       row('상태', '<span class="badge-' + (function(s){var v=(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status) + '">' + (f.Status||'대기') + '</span>') +
       row('신청일', fmtDate(f.RequestDate)) +
       sec('계약 정보') +
-      row('Title of Contract', f.ContractTitle||'(미입력)') +
+      row('Title of Contract', esc(f.ContractTitle||'(미입력)')) +
       row('Type', f.ContractCompanyType) +
       row('Contract Type', f.ContractType) +
-      row('Contract Partner', f.ContractPartner) +
+      row('Contract Partner', esc(f.ContractPartner)) +
       row('Objective', f.Objective) +
       row('Contract Value', f.ContractValue ? Number(f.ContractValue).toLocaleString() + ' ' + (f.Currency||'') : '-') +
       row('Contract Period', (f.PeriodType||'') + (f.PeriodStart ? ' | ' + f.PeriodStart + ' ~ ' + (f.PeriodEnd||'No end') : '')) +
@@ -2298,7 +2311,7 @@ async function showDetail(reqId) {
       const yn = v => v ? '<span style="font-weight:600;color:' + (v.toLowerCase()==='yes'?'#107c10':'#a4262c') + '">' + v.toUpperCase() + '</span>' : '-';
       html += row('Business / commercial terms reviewed', yn(f.BizTermsReviewed));
       if (f.DDPerformed) {
-        const ddDetail = f.DDPerformed.toLowerCase()==='yes' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(DD ID: ' + f.DDId + ')</span>' : (f.DDPerformed.toLowerCase()==='no' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(' + f.DDId + ')</span>' : '');
+        const ddDetail = f.DDPerformed.toLowerCase()==='yes' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(DD ID: ' + esc(f.DDId) + ')</span>' : (f.DDPerformed.toLowerCase()==='no' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(' + esc(f.DDId) + ')</span>' : '');
         html += row('Is Compliance Due Diligence performed?', yn(f.DDPerformed) + ddDetail);
       }
       if (f.PersonalInfo) {
