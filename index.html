@@ -2441,7 +2441,9 @@ async function showDetail(reqId) {
     if (actionBar) {
       const mp = window._pendingApproverBtn;
       // 버튼이 화면 폭만큼 늘어지면 보기 안 좋아 고정폭으로 두고 우측에 모은다.
-      actionBar.style.cssText = 'display:flex;gap:8px;padding:12px 32px;border-top:1px solid #edebe9;background:#fff;flex-shrink:0;align-items:center;justify-content:flex-end';
+      // 출력 버튼은 항상 왼쪽. 결재할 차례가 있을 때만 스페이서로 승인·반려를 오른쪽으로 민다.
+      // justify-content:flex-end 를 쓰면 버튼이 하나뿐일 때 혼자 오른쪽 구석에 붙어 어색하다.
+      actionBar.style.cssText = 'display:flex;gap:8px;padding:12px 32px;border-top:1px solid #edebe9;background:#fff;flex-shrink:0;align-items:center';
       // Chop 안내는 오른쪽 사이드 패널로 옮긴다. 하단은 출력·승인·반려 버튼만 두어
       // 결재 버튼이 나올 때도 상세 내용 보이는 공간이 줄지 않게 한다.
       const sideEl = document.getElementById('modal-side');
