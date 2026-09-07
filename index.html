@@ -137,9 +137,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .extra-inp:focus { outline: none; border-color: #0078d4; }
 .sub-row { display: none; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid #edebe9; }
 .sub-row.show { display: flex; }
-.sign-opts { display: flex; gap: 16px; flex-wrap: wrap; }
-.sign-opts label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #323130; cursor: pointer; }
-.sign-opts input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; }
+.sign-opts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+/* 서명 옵션 카드 — 본문 한 줄 + 작은 보조 설명. 선택하면 테두리·배경이 파랗게 바뀐다 */
+.sign-opts label.sign-opt { display: flex; align-items: flex-start; gap: 8px; padding: 7px 12px 7px 10px; border: 1px solid #e1dfdd; border-radius: 8px; background: #fff; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; white-space: nowrap; }
+.sign-opts label.sign-opt:hover { border-color: #c7e0f4; background: #f7fbff; }
+.sign-opts label.sign-opt:has(input:checked) { border-color: #0078d4; background: #eff6fc; box-shadow: 0 0 0 1px #0078d4 inset; }
+.sign-opts input[type="checkbox"] { accent-color: #0078d4; width: 14px; height: 14px; margin-top: 2px; flex-shrink: 0; }
+.sign-opt .so-main { display: block; font-size: 13px; color: #323130; font-weight: 600; line-height: 1.3; }
+.sign-opt .so-hint { display: block; font-size: 10.5px; color: #8a8886; line-height: 1.3; margin-top: 2px; }
+.sign-opts label.sign-opt:has(input:checked) .so-hint { color: #106ebe; }
 
 /* Approver blocks */
 .appr-block { background: #f9f9f9; border: 1px solid #edebe9; border-radius: 6px; padding: 14px; margin-bottom: 10px; }
@@ -569,9 +575,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="comp-row">
         <div class="comp-label">Final signing off?</div>
         <div class="comp-opts sign-opts">
-          <label><input type="checkbox" value="authorized person's signatures" onchange="updateSignOffBlocks()"> authorized person's signatures</label>
-          <label><input type="checkbox" value="signatures and corporate chop" onchange="updateSignOffBlocks()"> signatures and corporate chop</label>
-          <label><input type="checkbox" value="chop only" onchange="updateSignOffBlocks()"> chop only</label>
+          <label class="sign-opt"><input type="checkbox" value="Authorized person's signatures (RD signature not required)" onchange="updateSignOffBlocks()"><span><span class="so-main">Authorized person's signatures</span><span class="so-hint">RD signature not required</span></span></label>
+          <label class="sign-opt"><input type="checkbox" value="RD signature or corporate chop" onchange="updateSignOffBlocks()"><span><span class="so-main">RD signature or corporate chop</span><span class="so-hint">CFO · RD approval added</span></span></label>
+          <label class="sign-opt"><input type="checkbox" value="Chop only" onchange="updateSignOffBlocks()"><span><span class="so-main">Chop only</span><span class="so-hint">CFO · RD approval added</span></span></label>
         </div>
       </div>
 
@@ -580,7 +586,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <b>결재 라인 구성 기준</b><br>
         1차 Line Manager · 2차 Department Head · 3차 Legal &amp; Compliance <span style="color:#0078d4">(기본 고정)</span><br>
         <b style="color:#0078d4">Type = Sales</b> 인 경우: 4차 Controlling 팀장 (Contract Checklist) 추가<br>
-        Accounting 다음 · <b>Final signing off에서 "signatures and corporate chop" 또는 "chop only" 선택 시</b>: CFO · RD 자동 추가<br>
+        Accounting 다음 · <b>Final signing off에서 "RD signature or corporate chop" 또는 "Chop only" 선택 시</b>: CFO · RD 자동 추가<br>
         
       </div>
 
@@ -1602,7 +1608,7 @@ async function printApprovalDoc(reqId) {
   <div><h1>STK Contract Approval Record</h1><div class="sub">chop 승인 목적용 승인내역</div></div>
   <div class="meta">출력일시: ${nowStr}<br>Contract #${reqId}</div>
 </div>
-<div class="chop-notice">본 문서는 Final signing off 선택 조항에서 <b>signatures and corporate chop</b> 또는 <b>chop only</b> 조건을 선택하여 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역이며, 그 외의 목적으로는 사용이 불가합니다.<br>모든 결재 승인 처리 이후, 해당 내용 출력하여 <b>Accounting 부서에 증빙 제출 → Chop 처리</b> 진행하시면 됩니다.</div>
+<div class="chop-notice">본 문서는 Final signing off 선택 조항에서 <b>RD signature or corporate chop</b> 또는 <b>Chop only</b> 조건을 선택하여 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역이며, 그 외의 목적으로는 사용이 불가합니다.<br>모든 결재 승인 처리 이후, 해당 내용 출력하여 <b>Accounting 부서에 증빙 제출 → Chop 처리</b> 진행하시면 됩니다.</div>
 <div class="chop-path">
   <div class="cp-title">⚠ Chop 처리 후 <a href="https://startruckkorea.sharepoint.com/sites/STK-NAS/STK/Forms/AllItems.aspx?id=%2Fsites%2FSTK%2DNAS%2FSTK%2FSTK%2DShared%2F6%2E%20STK%2Ddirected%20B2B&viewid=c2220a52%2Df1e8%2D4a3e%2Dafea%2D519c4cf06c91" target="_blank" rel="noopener">STK-NAS &gt; STK B2B</a> 저장 <span class="cp-req">(필수)</span></div>
   <div>① 법인인감 · 사용인감 로그 기록 &nbsp;<span class="cp-loc">002._Accounting Accenture &gt; 2. Company chop request &gt; Document Log</span></div>
@@ -2995,7 +3001,8 @@ async function submitForm() {
     } catch(fe) { console.error('Drive error:', fe); }
 
     // 결재자 등록
-    // CFO·RD 추가 조건: Final signing off 에서 "corporate chop" 또는 "chop only" 선택 시
+    // CFO·RD 추가 조건: Final signing off 에서 "RD signature or corporate chop" 또는 "Chop only" 선택 시
+    // (09-07 문구 변경 전 기록은 "signatures and corporate chop" 으로 저장돼 있다. 둘 다 'corporate chop' 을 포함하므로 같은 판정)
     const signOffVal = (signChecked.join(' ')).toLowerCase();
     const needChopApprovers = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
 
