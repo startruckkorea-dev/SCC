@@ -920,6 +920,40 @@ function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+/* ── 대리 처리 표기 (AAC 연동) ────────────────────────────────────────
+   AAC(결재 대리 지정)가 대리인이 처리한 결재행의 ApproverRole 뒤에
+   '· 대리(이름 <메일>)' 를 덧붙인다. 그 꼬리를 그대로 화면에 뿌리면
+   '1차결재자 · 대리(Jimmy Lee <jimmy.lee@hyosung.com>)' 처럼 날값이 노출된다.
+   본래 역할만 남기고, 대리였다는 사실은 알약으로 따로 보여준다.
+   IT-Ticket(1877행 부근)·Goodwill-Approval·aps 와 같은 표기·같은 색이다.
+   대리가 아니면 aacRolePill 이 빈 문자열을 돌려주므로 호출부에 조건이 필요 없다. */
+function _aacRoleParse(role){
+  const m = String(role == null ? '' : role).match(/^([\s\S]*?)\s*\u00B7\s*대리\(([\s\S]+)\)\s*$/);
+  if(!m) return null;
+  const im = m[2].match(/^([\s\S]*?)\s*<([^>]+)>\s*$/);
+  return { base: m[1].trim(), name: (im ? im[1] : m[2]).trim(), email: im ? im[2].trim() : '' };
+}
+function aacRoleBase(role){
+  const p = _aacRoleParse(role);
+  return p ? p.base : String(role == null ? '' : role);
+}
+function aacRolePill(role, status){
+  const p = _aacRoleParse(role);
+  if(!p) return '';
+  const s = String(status == null ? '' : status).trim();
+  const verb = (s === '승인' || s === '승인완료') ? 'Approved on behalf of'
+             : s === '반려' ? 'Rejected on behalf of'
+             : s.indexOf('철회') === 0 ? 'Withdrawn on behalf of' : 'On behalf of';
+  return ' <span title="' + esc(verb + ' ' + p.name + (p.email ? ' (' + p.email + ')' : ''))
+    + '" style="background:#fff4ce;border:1px solid #f2d68c;color:#8a5a00;font-size:10px;'
+    + 'font-weight:600;letter-spacing:.1px;border-radius:10px;padding:1px 9px;margin-left:6px;'
+    + 'white-space:nowrap;vertical-align:1px">'
+    + '<span style="font-weight:400;opacity:.8">' + verb + ' </span>'
+    + '<b style="font-weight:700">' + esc(p.name) + '</b>'
+    + (p.email ? '<span style="font-weight:400;opacity:.75"> &middot; ' + esc(p.email) + '</span>' : '')
+    + '</span>';
+}
 // style="..." / value="..." 처럼 속성값 안에 넣을 때는 따옴표까지 막아야 한다.
 function escAttr(s) {
   return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -1706,7 +1740,7 @@ ${(()=>{
       }
       return '<tr>' +
         '<td>' + (af.ApprovalOrder||'') + '차</td>' +
-        '<td>' + (af.ApproverRole||'') + '</td>' +
+        '<td>' + esc(aacRoleBase(af.ApproverRole)) + aacRolePill(af.ApproverRole, af.Status) + '</td>' +
         '<td>' + (af.ApproverName||'') + '</td>' +
         '<td>' + dateStr + '</td>' +
         '<td><span class="badge badge-' + (af.Status||'대기') + '">' + (af.Status||'-') + '</span></td>' +
@@ -2538,7 +2572,7 @@ async function showDetail(reqId) {
           apprList.map(a => {
             const af = a.fields;
             return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 12px;border-bottom:1px solid #edebe9">' +
-              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q;})() + '</div>' +
+              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=aacRoleBase(af.ApproverRole),_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q+aacRolePill(af.ApproverRole, af.Status);})() + '</div>' +
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
               (() => {
@@ -3324,7 +3358,7 @@ function openUniDetail(apprId) {
     '<div style="font-size:.72rem;font-weight:600;color:#0078d4;background:#f0f6ff;border-left:3px solid #0078d4;padding:5px 10px;border-radius:4px;margin-bottom:8px">결재 현황</div>' +
     '<div style="background:#f9f9f9;border-radius:6px;border:1px solid #edebe9;overflow:hidden;margin-bottom:14px">' +
     apprList.map(af => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #edebe9">' +
-      '<div><div style="font-weight:600;font-size:.8rem">'+(()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q;})()+'</div>' +
+      '<div><div style="font-weight:600;font-size:.8rem">'+(()=>{const _r=aacRoleBase(af.ApproverRole),_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q+aacRolePill(af.ApproverRole, af.Status);})()+'</div>' +
       '<div style="font-size:.72rem;color:#605e5c">'+(af.ApproverName||'')+' · '+(af.ApproverEmail||'')+'</div></div>' +
       '<span style="color:'+(sc[af.Status]||'#323130')+';font-weight:700;font-size:.75rem;white-space:nowrap">'+(af.Status||'')+'</span></div>'
     ).join('') + '</div>' +
