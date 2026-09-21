@@ -3284,13 +3284,19 @@ function showLoginError(msg) { const el = document.getElementById('login-error')
 // 로그인이 필요하면 MSAL 이 주소를 origin+pathname 으로 되돌려 쿼리가 사라지므로,
 // 먼저 sessionStorage 에 옮겨 두고 주소창에서는 지운다(새로고침해도 다시 열리지 않게).
 const SCC_DEEPLINK_KEY = 'scc_deeplink';
+/* 보관 값은 10분만 유효하다. 로그인 화면에서 멈춘 채 같은 탭에서 다른 주소로 갔다가 나중에 이 시스템을
+   열면, 한참 전의 건이 갑자기 열리는 일을 막는다(2026-09-21 재리뷰). */
+const DEEPLINK_TTL_MS = 10 * 60 * 1000;
 (function captureDeepLink() {
   try {
     const q = new URLSearchParams(window.location.search);
     const tab = q.get('tab'), id = q.get('id');
     if (tab || id) {
-      sessionStorage.setItem(SCC_DEEPLINK_KEY, JSON.stringify({ tab: tab || '', id: id || '' }));
-      history.replaceState(null, '', window.location.pathname + window.location.hash);
+      sessionStorage.setItem(SCC_DEEPLINK_KEY, JSON.stringify({ tab: tab || '', id: id || '', at: Date.now() }));
+      // tab · id 만 지우고 나머지 값은 남긴다(BP · FA 와 같게).
+      q.delete('tab'); q.delete('id');
+      const rest = q.toString();
+      history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
     }
   } catch (e) { /* 저장소를 못 쓰면 첫 화면으로 연다 */ }
 })();
@@ -3301,15 +3307,29 @@ function deepLinkIsAdmin() {
   const mine = [user && user.email, user && user.username].map((x) => String(x || '').toLowerCase()).filter(Boolean);
   return ADMIN_EMAILS.map((e) => String(e || '').toLowerCase()).some((e) => mine.includes(e));
 }
+/* 돌려주는 값: true(허용) · 'notfound'(없는 건) · false(권한 없음 · 확인 실패) */
 async function deepLinkAllowed(id) {
+  let r;
   try {
     if (!siteId) { const st = await api('/sites/' + SITE_PATH); siteId = st.id; }
-    const r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + id + '?$expand=fields($select=RequesterEmail)');
+    r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + id + '?$expand=fields($select=RequesterEmail)');
+  } catch (e) {
+    console.warn('[딥링크] 건 조회 실패:', e.message);
+    return /not\s*found|404/i.test(String(e.message)) ? 'notfound' : false;
+  }
+  try {
     const mine = [user && user.email, user && user.username].map((x) => String(x || '').toLowerCase()).filter(Boolean);
     if (mine.includes(String(r.fields && r.fields.RequesterEmail || '').toLowerCase())) return true;
     if (deepLinkIsAdmin()) return true;
-    const a = await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields($select=ApproverEmail,RequestID)&$top=999');
-    return (a.value || []).some((x) => String(x.fields.RequestID) === String(id) && isMyAppr(x.fields.ApproverEmail));
+    /* 결재 목록 전체를 훑으면 계약이 쌓일수록 느려진다 — 해당 건만 먼저 조회한다.
+       SCC 는 RequestID 열 형식을 코드로 확인할 수 없어, 서버 필터가 실패하면 예전처럼 전체 조회로 물러난다. */
+    let rows;
+    try {
+      rows = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields($select=ApproverEmail,RequestID)&$filter=fields/RequestID eq ' + id)).value || [];
+    } catch (e) {
+      rows = (await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields($select=ApproverEmail,RequestID)&$top=999')).value || [];
+    }
+    return rows.some((x) => String(x.fields.RequestID) === String(id) && isMyAppr(x.fields.ApproverEmail));
   } catch (e) {
     console.warn('[딥링크] 권한 확인 실패:', e.message);
     return false;          // 확인이 안 되면 열지 않는다
@@ -3320,13 +3340,18 @@ async function consumeDeepLink() {
   try { d = JSON.parse(sessionStorage.getItem(SCC_DEEPLINK_KEY) || 'null'); sessionStorage.removeItem(SCC_DEEPLINK_KEY); }
   catch (e) { d = null; }
   if (!d) return;
+  if (!d.at || Date.now() - d.at > DEEPLINK_TTL_MS) return;   // 오래된 값은 버린다
   const id = parseInt(d.id, 10);
   // 관리자 탭은 권한 검사를 거치게 두고, 알 수 없는 값은 무시한다. id 만 오면 결재함으로 연다.
   const tab = ['form', 'list', 'approval', 'admin'].includes(d.tab) ? d.tab : (id > 0 ? 'approval' : '');
   if (tab) switchTab(tab);
   if (!(id > 0)) return;
-  if (!(await deepLinkAllowed(id))) {
-    alert('이 계약 건을 볼 수 있는 권한이 없습니다.\n결재함에서 내 결재 건을 확인해 주세요.');
+  /* 없는 번호(삭제된 건 등)를 「권한 없음」 으로 안내하면 원인을 잘못 짚게 된다 — 따로 알린다. */
+  const _allow = await deepLinkAllowed(id);
+  if (_allow !== true) {
+    alert(_allow === 'notfound'
+      ? '해당 계약 건을 찾을 수 없습니다. 삭제되었거나 번호가 잘못되었습니다.\n결재함에서 내 결재 건을 확인해 주세요.'
+      : '이 계약 건을 볼 수 있는 권한이 없습니다.\n결재함에서 내 결재 건을 확인해 주세요.');
     return;
   }
   try { await showDetail(id); } catch (e) { console.warn('[딥링크] 상세 열기 실패:', e.message); return; }
