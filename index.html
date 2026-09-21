@@ -1220,6 +1220,9 @@ async function boot(account) {
     }
   } catch(e) { alert('SharePoint 연결 오류: ' + e.message); }
 
+  // APS 에서 특정 건으로 들어왔으면 결재함 · 그 건의 상세를 연다.
+  await consumeDeepLink();
+
   // 배지 자동 갱신 (60초마다)
   setInterval(function(){ try{checkApprovalBadge();}catch(e){} }, 60000);
 }
@@ -3272,6 +3275,38 @@ function loading(v, title='처리 중...', sub='') {
   if (s) s.textContent = sub;
 }
 function showLoginError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+
+// ── APS 에서 특정 건으로 바로 들어오기(딥링크) ──
+// APS 의 「SCC에서 결재 →」·「SCC 결재 시스템으로 이동」 은 예전에 SCC 첫 화면으로만 보냈고,
+// 첫 화면은 「신청서 작성」(STK Contract Checklist) 이라 결재하려던 대표님이 매번
+// 체크리스트 작성 화면에 떨어졌다(2026-09-21 신고). APS 가 ?tab=approval&id=<신청 ID> 를 붙여 보내면
+// 로그인 뒤 결재함을 열고 그 건의 상세를 바로 띄운다.
+// 로그인이 필요하면 MSAL 이 주소를 origin+pathname 으로 되돌려 쿼리가 사라지므로,
+// 먼저 sessionStorage 에 옮겨 두고 주소창에서는 지운다(새로고침해도 다시 열리지 않게).
+const SCC_DEEPLINK_KEY = 'scc_deeplink';
+(function captureDeepLink() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const tab = q.get('tab'), id = q.get('id');
+    if (tab || id) {
+      sessionStorage.setItem(SCC_DEEPLINK_KEY, JSON.stringify({ tab: tab || '', id: id || '' }));
+      history.replaceState(null, '', window.location.pathname + window.location.hash);
+    }
+  } catch (e) { /* 저장소를 못 쓰면 첫 화면으로 연다 */ }
+})();
+async function consumeDeepLink() {
+  let d = null;
+  try { d = JSON.parse(sessionStorage.getItem(SCC_DEEPLINK_KEY) || 'null'); sessionStorage.removeItem(SCC_DEEPLINK_KEY); }
+  catch (e) { d = null; }
+  if (!d) return;
+  const id = parseInt(d.id, 10);
+  // 관리자 탭은 권한 검사를 거치게 두고, 알 수 없는 값은 무시한다. id 만 오면 결재함으로 연다.
+  const tab = ['form', 'list', 'approval', 'admin'].includes(d.tab) ? d.tab : (id > 0 ? 'approval' : '');
+  if (tab) switchTab(tab);
+  if (id > 0) {
+    try { await showDetail(id); } catch (e) { console.warn('[딥링크] 상세 열기 실패:', e.message); }
+  }
+}
 
 // ── MSAL Init ──
 (async () => {
