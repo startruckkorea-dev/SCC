@@ -789,7 +789,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
         <div id="verify-result" style="font-size:.78rem;font-weight:600;width:100%;display:none"></div>
       </div>
       <!-- 무결성 기록 재생성(관리자) — 후처리 마지막 단계(ApprovalRecords)만 실패한 건 복구. regenerateRecord 참고 -->
-      <div style="background:#fff8e6;border:1px solid #f0d9a6;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div id="regen-box" style="background:#fff8e6;border:1px solid #f0d9a6;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="font-size:.8rem;font-weight:700;color:#7d5700;white-space:nowrap">🛠 무결성 기록 재생성</span>
         <span style="font-size:.74rem;color:#605e5c">승인완료인데 SHA-256 Hash 가 「-」 인 건 — 제목의 ID 숫자를 넣고 실행</span>
         <input type="number" id="regen-id" placeholder="예: 116" min="1" style="width:110px;padding:5px 8px;border:1px solid #c8c6c4;border-radius:6px;font-size:.8rem;font-family:inherit">
@@ -1262,6 +1262,8 @@ async function boot(account) {
       setHdrContact('scc-contact-email', _contact.email);
       const _adminList = cfgEmails(_cfg,['SCC_ADMIN_1','ADMIN_SP']);
       if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
+      // 무결성 기록 재생성은 system_config_final.xlsx 의 ADMIN_SP_1 계정에게만(09-23 결정). 관리자 탭의 다른 관리자에겐 보이지 않는다.
+      _spAdminEmails = cfgEmails(_cfg,['ADMIN_SP_1']).map(e => e.toLowerCase());
       _configLoaded = true;
       Object.assign(A3,  cfgVal(_cfg,'SCC_COMPLIANCE', A3));
       Object.assign(A4S, cfgVal(_cfg,'SCC_CONTROLLING',A4S));
@@ -1286,6 +1288,7 @@ async function boot(account) {
     if (_adminEmails.includes(_ue) || _adminEmails.includes(_un) || _adminEmails.includes(_uu)) {
       document.getElementById('tab-admin-btn').style.display = 'block';
     }
+    if (isSpAdmin()) document.getElementById('regen-box').style.display = 'flex';
   } catch(e) { alert('SharePoint 연결 오류: ' + e.message); }
 
   // APS 에서 특정 건으로 들어왔으면 결재함 · 그 건의 상세를 연다.
@@ -2307,7 +2310,14 @@ function buildRecordFields(reqId, f, origName, savedName, hashHex, uploadedItem)
    후처리의 마지막 단계(ApprovalRecords 쓰기)만 실패한 건을 복구한다 — 목록에서 승인완료인데 Hash 가 「-」 인 건.
    Approved_Contracts/<id>/ 에 저장된 파일(가장 최근 것)을 내려받아 SHA-256 을 다시 계산하고,
    같은 RequestID 의 기록이 있으면 갱신, 없으면 새로 쓴다. 저장 단계부터 실패해 폴더가 없으면 그렇게 알린다. */
+let _spAdminEmails = [];   // ADMIN_SP_1 계정(소문자) — boot 에서 채운다
+function isSpAdmin() {
+  const mine = [user?.email, user?.username, user?.idTokenClaims?.preferred_username, user?.idTokenClaims?.upn]
+    .map(v => String(v || '').toLowerCase()).filter(Boolean);
+  return _spAdminEmails.some(e => mine.includes(e));
+}
 async function regenerateRecord() {
+  if (!isSpAdmin()) { alert('무결성 기록 재생성은 ADMIN_SP_1 계정만 실행할 수 있습니다.'); return; }
   const inp = document.getElementById('regen-id'), out = document.getElementById('regen-result');
   const reqId = parseInt((inp.value || '').trim(), 10);
   if (!reqId) { alert('신청 ID(숫자)를 입력하세요. 제목 SCC-2026-09-21_ID-116 이면 116 입니다.'); inp.focus(); return; }
