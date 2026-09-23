@@ -788,6 +788,14 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
         <button onclick="verifyFileHash()" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">Hash 검증</button>
         <div id="verify-result" style="font-size:.78rem;font-weight:600;width:100%;display:none"></div>
       </div>
+      <!-- 무결성 기록 재생성(관리자) — 후처리 마지막 단계(ApprovalRecords)만 실패한 건 복구. regenerateRecord 참고 -->
+      <div style="background:#fff8e6;border:1px solid #f0d9a6;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:.8rem;font-weight:700;color:#7d5700;white-space:nowrap">🛠 무결성 기록 재생성</span>
+        <span style="font-size:.74rem;color:#605e5c">승인완료인데 SHA-256 Hash 가 「-」 인 건 — 제목의 ID 숫자를 넣고 실행</span>
+        <input type="number" id="regen-id" placeholder="예: 116" min="1" style="width:110px;padding:5px 8px;border:1px solid #c8c6c4;border-radius:6px;font-size:.8rem;font-family:inherit">
+        <button onclick="regenerateRecord()" style="background:#7d5700;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">재생성</button>
+        <div id="regen-result" style="font-size:.78rem;font-weight:600;width:100%;display:none"></div>
+      </div>
       <div class="tbl-scroll">
       <table class="list-table">
         <thead><tr>
@@ -2254,27 +2262,16 @@ async function processApprovedContract(reqId) {
     }
 
     // 8. 해시 + 승인 정보 SharePoint 리스트에 기록 (동시/연속 승인 시 스로틀링 대비 재시도 포함)
+    const recordFields = buildRecordFields(reqId, f, origName, savedName, hashHex, uploadedItem);
     try {
-      await apiWithRetry('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', {
-        fields: {
-          Title: `Contract #${reqId} - ${origName}`,
-          RequestID: parseInt(reqId),
-          OriginalFileName: origName,
-          SavedFileName: savedName,
-          FileHash_SHA256: hashHex,
-          ApprovedDate: new Date().toISOString(),
-          RequesterEmail: f.RequesterEmail || '',
-          ContractTitle: f.Title || '',
-          ApprovedFolderPath: uploadedItem ? uploadedItem.webUrl : '',
-        }
-      }, RECORD_RETRIES);
+      await apiWithRetry('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', { fields: recordFields }, RECORD_RETRIES);
     } catch(e) {
-      // 여러 번 재시도해도 실패한 경우에만 (드문 케이스) — 조용히 넘기지 않고 눈에 띄게 경고
-      console.error(`ApprovalRecords 기록 실패(${RECORD_RETRIES + 1}회 시도 후):`, e.message);
+      // 여러 번 재시도해도 실패한 경우 — 조용히 넘기지 않고 눈에 띄게 경고. 보낸 값을 콘솔에 남겨 원인을 좇을 수 있게 한다.
+      console.error(`ApprovalRecords 기록 실패(${RECORD_RETRIES + 1}회 시도 후):`, e.message, recordFields);
       alert(
-        `⚠️ 계약서 승인/파일 저장/워터마크는 정상 완료됐지만,\n` +
+        `⚠️ 계약서 승인${uploadedItem ? '/파일 저장/워터마크는' : '은'} 정상 완료됐지만,\n` +
         `SHA-256 무결성 기록만 저장에 실패했습니다 (Contract #${reqId}).\n\n` +
-        `잠시 후 관리자에게 이 건의 무결성 기록 재생성을 요청해주세요.\n(오류: ${e.message})`
+        `관리자 탭 › 「무결성 기록 재생성」 에 신청 ID ${reqId} 를 넣고 실행하면 저장된 파일로 다시 만들 수 있습니다.\n(오류: ${e.message})`
       );
     }
   }
@@ -2282,6 +2279,78 @@ async function processApprovedContract(reqId) {
   // 9. 완료 메일 → Power Automate Flow (Contract-Checklist_Email_Notification) 가 STK_Contracts Status='승인완료' 변경을 감지해서 자동 발송
   // Flow의 '승인완료' 케이스에서 RequesterEmail로 완료 메일 발송됨
   console.log('완료 메일: Power Automate Flow에 위임 (STK_Contracts Status=승인완료 트리거)');
+}
+
+/* ── ApprovalRecords 필드 구성 ────────────────────────────────────────
+   SharePoint 「한 줄 텍스트」 열은 255자 한도. 예전에는 ApprovedFolderPath 에 업로드 응답의 webUrl 을 그대로 넣었는데,
+   webUrl 은 한글 파일명이 글자마다 %EC%9A%B0 처럼 9자로 부호화되고 저장 이름의 [ ] # 도 %5B %5D %23 이 되어
+   한글 이름 계약서는 255자를 쉽게 넘겼다 → 400 → 재시도해도 같은 오류 → 「무결성 기록만 실패」 경고가 잦았다(09-23).
+   경로는 부호화되지 않은 논리 경로(Approved_Contracts/<id>/<저장 이름>)로 두고, 문자열 열은 모두 255자로 자른다.
+   (이 열을 읽는 코드는 없다 — 검증 · 목록은 RequestID · SavedFileName · FileHash_SHA256 만 쓴다.) */
+const SP_TEXT_MAX = 255;
+const spText = (v) => { const s = String(v ?? ''); return s.length > SP_TEXT_MAX ? s.slice(0, SP_TEXT_MAX - 1) + '…' : s; };
+function buildRecordFields(reqId, f, origName, savedName, hashHex, uploadedItem) {
+  return {
+    Title: spText(`Contract #${reqId} - ${origName}`),
+    RequestID: parseInt(reqId),
+    OriginalFileName: spText(origName),
+    SavedFileName: spText(savedName),
+    FileHash_SHA256: hashHex,
+    ApprovedDate: new Date().toISOString(),
+    RequesterEmail: spText(f.RequesterEmail || ''),
+    ContractTitle: spText(f.Title || ''),
+    ApprovedFolderPath: spText(uploadedItem ? `Approved_Contracts/${reqId}/${savedName}` : ''),
+  };
+}
+
+/* ── 무결성 기록 재생성(관리자) ─────────────────────────────────────
+   후처리의 마지막 단계(ApprovalRecords 쓰기)만 실패한 건을 복구한다 — 목록에서 승인완료인데 Hash 가 「-」 인 건.
+   Approved_Contracts/<id>/ 에 저장된 파일(가장 최근 것)을 내려받아 SHA-256 을 다시 계산하고,
+   같은 RequestID 의 기록이 있으면 갱신, 없으면 새로 쓴다. 저장 단계부터 실패해 폴더가 없으면 그렇게 알린다. */
+async function regenerateRecord() {
+  const inp = document.getElementById('regen-id'), out = document.getElementById('regen-result');
+  const reqId = parseInt((inp.value || '').trim(), 10);
+  if (!reqId) { alert('신청 ID(숫자)를 입력하세요. 제목 SCC-2026-09-21_ID-116 이면 116 입니다.'); inp.focus(); return; }
+  out.style.display = 'block'; out.style.color = '#605e5c'; out.textContent = '⏳ 저장된 승인 파일을 찾는 중...';
+  try {
+    const item = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
+    const f = item.fields || {};
+    if ((f.Status || '') !== '승인완료') throw new Error('승인완료 상태가 아닙니다 (현재: ' + (f.Status || '-') + '). 무결성 기록은 승인완료 건에만 만듭니다.');
+    const drivesData = await api('/sites/' + siteId + '/drives');
+    const drive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+    let children;
+    try { children = await api('/drives/' + drive.id + '/root:/Approved_Contracts/' + reqId + ':/children?$select=id,name,size,folder,lastModifiedDateTime'); }
+    catch (e) { throw new Error('Approved_Contracts/' + reqId + ' 폴더가 없습니다 — 파일 저장 단계부터 실패한 건이라 재생성으로는 복구할 수 없습니다.'); }
+    const files = (children.value || []).filter(x => !x.folder).sort((a, b) => String(b.lastModifiedDateTime).localeCompare(String(a.lastModifiedDateTime)));
+    if (!files.length) throw new Error('Approved_Contracts/' + reqId + ' 폴더에 저장된 파일이 없습니다.');
+    const file = files[0];
+    out.textContent = '⏳ ' + file.name + ' 내려받아 SHA-256 계산 중...';
+    const t = await token();
+    const res = await fetch(GRAPH + '/drives/' + drive.id + '/items/' + file.id + '/content', { headers: { Authorization: 'Bearer ' + t } });
+    if (!res.ok) throw new Error('파일 다운로드 실패 (' + res.status + ')');
+    const hBuf = await crypto.subtle.digest('SHA-256', await res.arrayBuffer());
+    const hashHex = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const origName = file.name.replace(/^\[APPROVED_[^\]]+\]_Contract#\d+_/, '');   // 저장 이름 → 원본 이름
+    const fields = buildRecordFields(reqId, f, origName, file.name, hashHex, { id: file.id });
+    if (file.lastModifiedDateTime) fields.ApprovedDate = file.lastModifiedDateTime;   // 승인(저장) 시각을 지킨다
+    out.textContent = '⏳ 무결성 기록 저장 중...';
+    let existing = { value: [] };
+    try { existing = await api('/sites/' + siteId + '/lists/ApprovalRecords/items?$expand=fields&$select=id&$filter=fields/RequestID eq ' + reqId + '&$top=5'); }
+    catch (e) { console.warn('[재생성] 기존 기록 조회 실패(새로 만든다):', e.message); }
+    let mode = '생성';
+    if ((existing.value || []).length) {
+      await apiWithRetry('/sites/' + siteId + '/lists/ApprovalRecords/items/' + existing.value[0].id + '/fields', 'PATCH', fields, RECORD_RETRIES); mode = '갱신';
+    } else {
+      await apiWithRetry('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', { fields }, RECORD_RETRIES);
+    }
+    out.style.color = '#107c10';
+    out.innerHTML = '✅ 무결성 기록 ' + mode + ' 완료 — Contract #' + reqId + ' · ' + esc(file.name) +
+      '<br><span style="font-family:monospace;font-size:.72rem;font-weight:400">SHA-256 ' + hashHex + '</span>';
+    loadAdminList();
+  } catch (e) {
+    out.style.color = '#a4262c'; out.textContent = '❌ ' + (e.message || e);
+    console.error('[재생성] 실패:', e);
+  }
 }
 
 // ── PDF 워터마크 삽입 (벤츠 삼각별 로고만 반투명 적용) ──
