@@ -172,7 +172,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .appr-info input { border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; font-size: 13px; font-family: inherit; background: #f3f2f1; color: #605e5c; }
 
 /* List table */
-#tab-admin .list-table { min-width: 1200px; overflow-x: auto; }
+/* 관리자 표는 열이 9개다. td 가 nowrap 이라 내용대로 늘어나고, min-width 1200px 에 overflow-x 를
+   표 자체에 걸어 두어(표는 스크롤 상자가 되지 않는다) 화면이 좁으면 신청일 열이 카드 밖으로
+   튀어나가며 페이지가 가로로 끌렸다(09-23 지적). IT · GW 와 같은 방식으로 바꾼다 —
+   표를 감싼 .tbl-scroll 이 스크롤 상자가 되고, table-layout 을 고정해 카드 폭 안에서 열을 나누며
+   넘치는 글자는 말줄임표로 줄인다. 화면이 min-width 보다 좁을 때만 표만 가로로 끌린다. */
+.tbl-scroll { overflow-x: auto; }
+#tab-admin .list-table { table-layout: fixed; width: 100%; min-width: 960px; }
+#tab-admin .list-table th, #tab-admin .list-table td { padding-left: 8px; padding-right: 8px; }
+#tab-admin .list-table td { overflow: hidden; text-overflow: ellipsis; }
 #app.admin-wide { max-width: 1400px; }
 .list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
@@ -775,14 +783,16 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
         <button onclick="verifyFileHash()" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">Hash 검증</button>
         <div id="verify-result" style="font-size:.78rem;font-weight:600;width:100%;display:none"></div>
       </div>
+      <div class="tbl-scroll">
       <table class="list-table">
         <thead><tr>
-          <th>번호</th><th>신청자</th><th>제목</th><th>Contract Partner</th><th>Type</th><th>Contract Type</th><th>상태</th><th>신청일</th><th>SHA-256 Hash</th>
+          <th style="width:40px">번호</th><th style="width:170px">신청자</th><th style="width:160px">제목</th><th style="width:130px">Contract Partner</th><th style="width:72px">Type</th><th>Contract Type</th><th style="width:72px">상태</th><th style="width:112px">신청일</th><th style="width:110px">SHA-256 Hash</th>
         </tr></thead>
         <tbody id="admin-body">
           <tr><td colspan="9" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 </div>
