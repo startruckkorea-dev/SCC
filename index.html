@@ -178,9 +178,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
    표를 감싼 .tbl-scroll 이 스크롤 상자가 되고, table-layout 을 고정해 카드 폭 안에서 열을 나누며
    넘치는 글자는 말줄임표로 줄인다. 화면이 min-width 보다 좁을 때만 표만 가로로 끌린다. */
 .tbl-scroll { overflow-x: auto; }
-#tab-admin .list-table { table-layout: fixed; width: 100%; min-width: 960px; }
+#tab-admin .list-table { table-layout: fixed; width: 100%; min-width: 1000px; }
 #tab-admin .list-table th, #tab-admin .list-table td { padding-left: 8px; padding-right: 8px; }
 #tab-admin .list-table td { overflow: hidden; text-overflow: ellipsis; }
+/* 열 폭(09-23 2차): 상태 72px 은 알약(≈62px)보다 좁아 「승인완료 …」 로, 신청일 112px 은 「2026-09-21 15…」 로
+   잘렸다. 상태 92 · 신청일 136 · Type 84 로 넓히고, 폭을 정하지 않은 Contract Partner · Contract Type 두 열이
+   남는 폭을 반씩 나눠 쓴다 — 넓은 화면에서 Contract Type 만 늘어나 상태가 오른쪽 끝으로 밀리던 것을 막는다.
+   알약이 든 칸은 어떤 폭에서도 말줄임표를 붙이지 않는다. */
+#tab-admin .list-table td:has(> .badge) { text-overflow: clip; }
 #app.admin-wide { max-width: 1400px; }
 .list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
@@ -786,7 +791,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div class="tbl-scroll">
       <table class="list-table">
         <thead><tr>
-          <th style="width:40px">번호</th><th style="width:170px">신청자</th><th style="width:160px">제목</th><th style="width:130px">Contract Partner</th><th style="width:72px">Type</th><th>Contract Type</th><th style="width:72px">상태</th><th style="width:112px">신청일</th><th style="width:110px">SHA-256 Hash</th>
+          <th style="width:40px">번호</th><th style="width:186px">신청자</th><th style="width:160px">제목</th><th>Contract Partner</th><th style="width:84px">Type</th><th>Contract Type</th><th style="width:92px">상태</th><th style="width:136px">신청일</th><th style="width:110px">SHA-256 Hash</th>
         </tr></thead>
         <tbody id="admin-body">
           <tr><td colspan="9" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr>
