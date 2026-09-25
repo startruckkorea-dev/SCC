@@ -1915,9 +1915,11 @@ ${(()=>{
       if (t.indexOf('[체크리스트]') >= 0) { const k = t.indexOf('\n\n', t.indexOf('[체크리스트]')); return k >= 0 ? t.substring(k + 2).trim() : ''; }
       return (t.includes('☐') || t.includes('☑') || t.startsWith('→')) ? '' : t;
     };
+    // 역할 값은 「1차결재자(Line Manager)」 형식이라 차수 · 「결재자」 를 떼고 괄호 안만 남긴다 → 머리글 「1차 / Line Manager」
+    const roleLabel = (r) => { let t = String(aacRoleBase(r) || '').replace(/^\d+\s*차\s*결재자\s*/, '').trim(); const m = t.match(/^\((.*)\)$/); return m ? m[1] : t; };
     const head = aprs.map(a => { const af = a.fields;
       return '<th style="font-size:' + px(8.5) + ';padding:4px 3px;text-align:center;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;white-space:nowrap">'
-        + (af.ApprovalOrder || '') + '차<br><span style="font-weight:500;color:#64748b">' + esc(aacRoleBase(af.ApproverRole) || '') + '</span></th>'; }).join('');
+        + (af.ApprovalOrder || '') + '차<br><span style="font-weight:500;color:#64748b">' + esc(roleLabel(af.ApproverRole)) + '</span></th>'; }).join('');
     const cells = aprs.map(a => { const af = a.fields; const st = (af.Status || '').trim();
       let inner = '';
       if (st === '승인' || st === '반려') {
@@ -1935,7 +1937,7 @@ ${(()=>{
     const cmts = aprs.map(a => { const af = a.fields; const c = cleanCmt(af.Comment); return c ? { af, c } : null; }).filter(Boolean);
     let html = '<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px"><tr>' + head + '</tr><tr>' + cells + '</tr></table>';
     if (cmts.length) html += '<div style="margin-top:7px;font-size:9px;color:#475569">' + cmts.map(x =>
-      '<div style="margin:2px 0"><b style="color:#334155">' + (x.af.ApprovalOrder || '') + '차 ' + esc(aacRoleBase(x.af.ApproverRole) || '') + ' · ' + esc(x.af.ApproverName || '') + '</b> — ' + esc(x.c) + '</div>').join('') + '</div>';
+      '<div style="margin:2px 0"><b style="color:#334155">' + (x.af.ApprovalOrder || '') + '차 ' + esc(roleLabel(x.af.ApproverRole)) + ' · ' + esc(x.af.ApproverName || '') + '</b> — ' + esc(x.c) + '</div>').join('') + '</div>';
     const anyDeleg = aprs.some(a => _aacRoleParse(a.fields.ApproverRole));
     if (anyDeleg) html += '<div style="margin-top:5px;font-size:8px;color:#8a6116">※ 「on behalf of」 는 결재 대리(AAC)로 처리된 단계 — 도장의 이름은 실제 처리한 대리인, 아래 이름은 원 결재자</div>';
     return html;
