@@ -646,18 +646,21 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       </div>
 
       <div class="section-title">5. 결재자 지정 (Approvers)</div>
-      <div style="font-size:11px;color:#605e5c;background:#f9f8f7;border:1px solid #edebe9;border-radius:4px;padding:8px 12px;margin-bottom:12px;line-height:1.8">
-        <b>결재 라인 구성 기준</b><br>
-        1차 Line Manager · 2차 Department Head · 3차 Legal &amp; Compliance <span style="color:#0078d4">(기본 고정)</span><br>
-        <b style="color:#0078d4">Type = Sales</b> 인 경우: 4차 Controlling 팀장 (Contract Checklist) 추가<br>
-        Accounting 다음 · <b>Final signing off에서 "RD signature or corporate chop" 또는 "Chop only" 선택 시</b>: CFO · RD 자동 추가<br>
-        
+      <!-- 결재 라인 미리보기 · 결재자 블록 — ACC Voucher 와 같은 모양(09-30).
+           단계는 Type(Sales → Controlling 팀장 추가) · Final signing off(chop → CFO · RD 추가)에 따라 바뀌므로 updateApproverBlocks() 가 다시 그린다. -->
+      <div class="appr-line-preview">
+        <div class="appr-line-title">📋 결재 라인 (Type &amp; Final signing off 기준 자동 구성)</div>
+        <div class="appr-line-steps" id="scc-line-steps"><span class="line-step"><span class="line-step-badge">1차</span><span class="line-step-label">Line Manager (팀장)</span><span class="line-arrow">→</span></span><span class="line-step"><span class="line-step-badge">2차</span><span class="line-step-label">Department Head (부서장)</span><span class="line-arrow">→</span></span><span class="line-step"><span class="line-step-badge fixed">3차</span><span class="line-step-label">Legal &amp; Compliance</span><span class="line-arrow">→</span></span><span class="line-step"><span class="line-step-badge fixed">4차</span><span class="line-step-label">Accounting 팀장</span></span></div>
+        <div style="margin-top:8px;padding-top:7px;border-top:1px dashed #c7e0f4;font-size:11px;color:#605e5c;line-height:1.7">
+          <b style="color:#0b5fa5">Type = Sales</b> 인 경우 Controlling 팀장 (Contract Checklist) 단계가 추가되고,
+          <b style="color:#0b5fa5">Final signing off</b> 에서 "RD signature or corporate chop" 또는 "Chop only" 선택 시 Accounting 다음에 CFO · RD 단계가 추가됩니다.
+        </div>
       </div>
 
       <!-- 1차: Line Manager (선택) -->
       <div class="appr-block">
-        <div class="appr-title">1차 결재자 <span class="req-mark">*</span> <span class="hint">— Line Manager (팀장)</span></div>
-        <div class="appr-grid">
+        <div class="appr-block-title">1차 결재자 <span class="req-mark">*</span><span class="appr-tag manual">직접 선택</span> <span class="hint">— Line Manager (팀장)</span></div>
+        <div class="appr-select-row">
           <select id="a1-dept"   onchange="onDeptChange(1)"><option value="">부서</option></select>
           <select id="a1-team"   onchange="onTeamChange(1)" disabled><option value="">팀</option></select>
           <select id="a1-person" onchange="onPersonChange(1)" disabled><option value="">직원 선택</option></select>
@@ -670,8 +673,8 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
 
       <!-- 2차: 부서장 (선택) -->
       <div class="appr-block">
-        <div class="appr-title">2차 결재자 <span class="hint">— Department Head (부서장)</span></div>
-        <div class="appr-grid">
+        <div class="appr-block-title">2차 결재자<span class="appr-tag manual">직접 선택</span> <span class="hint">— Department Head (부서장)</span></div>
+        <div class="appr-select-row">
           <select id="a2-dept"   onchange="onDeptChange(2)"><option value="">부서</option></select>
           <select id="a2-team"   onchange="onTeamChange(2)" disabled><option value="">팀</option></select>
           <select id="a2-person" onchange="onPersonChange(2)" disabled><option value="">직원 선택</option></select>
@@ -683,47 +686,47 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       </div>
 
       <!-- 3차: Legal & Compliance — 고정 -->
-      <div class="appr-block">
-        <div class="appr-title">3차 결재자 <span class="hint">— Legal &amp; Compliance (자동 지정)</span></div>
+      <div class="appr-block appr-fixed">
+        <div class="appr-block-title">3차 결재자<span class="appr-tag auto">자동 지정</span> <span class="hint">— Legal &amp; Compliance</span></div>
         <div class="appr-info">
-          <input type="text"  id="cfg-a3-name"  value="" readonly>
-          <input type="email" id="cfg-a3-email" value="" readonly>
+          <input type="text"  id="cfg-a3-name"  value="" readonly placeholder="이름">
+          <input type="email" id="cfg-a3-email" value="" readonly placeholder="이메일">
         </div>
       </div>
 
-      <!-- 4차: Jungho Yoo — Sales 전용 조건부 -->
-      <div class="appr-block" id="appr-block-jungho" style="display:none;border:1px solid #bfdbfe;background:#eff6ff">
-        <div class="appr-title" style="color:#1d4ed8">4차 결재자 <span class="hint">— Controlling 팀장 (Sales Type 자동 추가)</span></div>
+      <!-- 4차: Controlling 팀장 — Sales 전용 조건부 -->
+      <div class="appr-block appr-fixed" id="appr-block-jungho" style="display:none">
+        <div class="appr-block-title">4차 결재자<span class="appr-tag auto">자동 지정</span> <span class="hint">— Controlling 팀장 (Sales Type 시 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  id="cfg-a4s-name"  value="" readonly>
-          <input type="email" id="cfg-a4s-email" value="" readonly>
+          <input type="text"  id="cfg-a4s-name"  value="" readonly placeholder="이름">
+          <input type="email" id="cfg-a4s-email" value="" readonly placeholder="이메일">
         </div>
       </div>
 
       <!-- Accounting: Sales면 5차, Non-Sales면 4차 -->
-      <div class="appr-block" id="appr-block-acct">
-        <div class="appr-title" id="appr-acct-title">4차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span></div>
+      <div class="appr-block appr-fixed" id="appr-block-acct">
+        <div class="appr-block-title" id="appr-acct-title">4차 결재자<span class="appr-tag auto">자동 지정</span> <span class="hint">— Accounting 팀장</span></div>
         <div class="appr-info">
-          <input type="text"  id="cfg-a5-name"  value="" readonly>
-          <input type="email" id="cfg-a5-email" value="" readonly>
+          <input type="text"  id="cfg-a5-name"  value="" readonly placeholder="이름">
+          <input type="email" id="cfg-a5-email" value="" readonly placeholder="이메일">
         </div>
       </div>
 
       <!-- CFO — 조건부 (Final signing off: corporate chop / chop only) -->
-      <div class="appr-block" id="appr-block-5" style="display:none;border:1px solid #ffd6a0;background:#fffaf3">
-        <div class="appr-title" style="color:#b45309" id="appr-cfo-title">5차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span></div>
+      <div class="appr-block appr-fixed" id="appr-block-5" style="display:none">
+        <div class="appr-block-title" id="appr-cfo-title">5차 결재자<span class="appr-tag auto">자동 지정</span> <span class="hint">— CFO (Final signing off 조건 시 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  id="cfg-a6-name"  value="" readonly>
-          <input type="email" id="cfg-a6-email" value="" readonly>
+          <input type="text"  id="cfg-a6-name"  value="" readonly placeholder="이름">
+          <input type="email" id="cfg-a6-email" value="" readonly placeholder="이메일">
         </div>
       </div>
 
       <!-- 최종: RD — chop 조건 시에만 표시 (CEO 결재 라인 제거됨) -->
-      <div class="appr-block" id="appr-block-rd" style="display:none;border:1px solid #fecaca;background:#fff5f5">
-        <div class="appr-title" style="color:#b91c1c" id="appr-rd-title">최종 결재자 <span class="hint">— RD (Final signing off 조건 충족 시 자동 추가)</span></div>
+      <div class="appr-block appr-fixed" id="appr-block-rd" style="display:none">
+        <div class="appr-block-title" id="appr-rd-title">6차 결재자<span class="appr-tag auto">자동 지정</span> <span class="hint">— RD (Final signing off 조건 시 추가)</span></div>
         <div class="appr-info">
-          <input type="text"  id="cfg-ard-name"  value="" readonly>
-          <input type="email" id="cfg-ard-email" value="" readonly>
+          <input type="text"  id="cfg-ard-name"  value="" readonly placeholder="이름">
+          <input type="email" id="cfg-ard-email" value="" readonly placeholder="이메일">
         </div>
       </div>
 
@@ -3055,7 +3058,8 @@ function updateApproverBlocks() {
   // Accounting 차수 표시 업데이트
   const acctOrder = isSales ? 5 : 4;
   const acctTitle = document.getElementById('appr-acct-title');
-  if (acctTitle) acctTitle.innerHTML = acctOrder + '차 결재자 <span class="hint">— Accounting 팀장 (자동 지정)</span>';
+  const _auto = '<span class="appr-tag auto">자동 지정</span>';
+  if (acctTitle) acctTitle.innerHTML = acctOrder + '차 결재자' + _auto + ' <span class="hint">— Accounting 팀장</span>';
 
   // CFO/RD — chop 조건 시에만 (CEO 결재 라인 제거됨)
   const b5 = document.getElementById('appr-block-5');
@@ -3067,9 +3071,19 @@ function updateApproverBlocks() {
     const cfoO = acctOrder + 1, rdO = acctOrder + 2;
     const cfoT = document.getElementById('appr-cfo-title');
     const rdT  = document.getElementById('appr-rd-title');
-    if (cfoT) cfoT.innerHTML = cfoO + '차 결재자 <span class="hint">— CFO (Final signing off 조건 충족 시 자동 추가)</span>';
-    if (rdT)  rdT.innerHTML  = rdO  + '차 결재자 <span class="hint">— RD (최종)</span>';
+    if (cfoT) cfoT.innerHTML = cfoO + '차 결재자' + _auto + ' <span class="hint">— CFO (Final signing off 조건 시 추가)</span>';
+    if (rdT)  rdT.innerHTML  = rdO  + '차 결재자' + _auto + ' <span class="hint">— RD (Final signing off 조건 시 추가)</span>';
   }
+
+  // 결재 라인 미리보기 — ACC Voucher 와 같은 배지 나열(09-30). 조건에 따라 단계가 바뀌므로 블록과 함께 다시 그린다.
+  const steps = [['Line Manager (팀장)', false], ['Department Head (부서장)', false], ['Legal &amp; Compliance', true]];
+  if (isSales) steps.push(['Controlling 팀장', true]);
+  steps.push(['Accounting 팀장', true]);
+  if (needChop) { steps.push(['CFO', true]); steps.push(['RD', true]); }
+  const lp = document.getElementById('scc-line-steps');
+  if (lp) lp.innerHTML = steps.map(([l, f], i) =>
+    '<span class="line-step"><span class="line-step-badge' + (f ? ' fixed' : '') + '">' + (i + 1) + '차</span><span class="line-step-label">' + l + '</span>' +
+    (i < steps.length - 1 ? '<span class="line-arrow">→</span>' : '') + '</span>').join('');
 }
 // ── Contract Template 상호 배타 + 하위항목 잠금 ──
 function onTmplChange(chk) {
@@ -3373,6 +3387,7 @@ function resetForm() {
     document.getElementById('a' + i + '-email').value = '';
   });
   [1, 2].forEach(i => populateDepts(i));
+  updateApproverBlocks();   // Type · Final signing off 를 비웠으니 조건부 결재자 블록과 결재 라인 미리보기도 기본 상태로(09-30)
 }
 
 // ── 파일 열기: Graph API downloadUrl → 새 탭 ──
@@ -4065,6 +4080,38 @@ function _wdBtn(itemId, aprList, reqList, status) {
 <style>
 @keyframes noAuthIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 #no-auth-modal.show{display:flex!important}
+
+/* ── 결재 라인 · 결재자 블록 — APS 공통 (ACC Voucher 기준, 09-30) ──
+   결재 라인 미리보기(📋 결재 라인 + N차 배지 → …)와 결재자 블록 제목(N차 결재자 · 자동 지정/직접 선택 알약 · — 역할)을
+   ACC Voucher 와 같은 모양으로 맞춘다. 시스템마다 달랐던 표시(제목 앞 파란 점, "(고정)" 글자, 회색 배지)는 쓰지 않는다.
+   값은 acc_voucher/index.html 의 .appr-block · .appr-block-title · .line-step* · .appr-select-row · .appr-info 그대로. */
+.appr-line-preview{background:#f0f6ff;border:1px solid #c7e0f4;border-radius:6px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#323130}
+.appr-line-title{font-weight:600;color:#0078d4;margin-bottom:6px;font-size:12px}
+.appr-line-steps{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.line-step{display:inline-flex;align-items:center;gap:4px;margin:0 4px 0 0}
+.line-step-badge{display:inline-block;background:#0078d4;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin:0}
+.line-step-badge.fixed{background:#107c10}
+.line-step-badge.extra{background:#d9a41a}
+.line-step-label{font-size:.75rem;color:#323130}
+.line-arrow{color:#a19f9d;font-size:13px;margin:0}
+.appr-block{background:#fff;border:1px solid #edebe9;border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.appr-block.appr-fixed{background:#f0f6ff;border-color:#c7e0f4}
+.appr-block-title{display:block;font-size:12px;font-weight:700;color:#323130;margin-bottom:10px;line-height:1.5}
+.appr-block-title .hint{font-weight:400;color:#605e5c;margin:0 0 0 4px;font-size:12px;line-height:inherit}
+.appr-block-title .req-mark{color:#d83b01;margin:0}
+.appr-tag{display:inline-block;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:4px;line-height:1.5;vertical-align:1px}
+.appr-tag.auto{color:#107c10;background:#dff6dd}
+.appr-tag.manual{color:#8a6914;background:#fff4ce}
+.appr-tag.extra{color:#8a6116;background:#fdf3d6}
+.appr-select-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.appr-select-row select{width:100%;box-sizing:border-box;margin:0;padding:7px 10px;border:1px solid #d2d0ce;border-radius:4px;font-size:12px;font-family:inherit;background:#fff;color:#323130}
+.appr-select-row select:disabled{background:#f3f2f1;color:#a19f9d}
+.appr-select-row select:focus{outline:none;border-color:#0078d4}
+.appr-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.appr-info input{width:100%;box-sizing:border-box;margin:0;padding:7px 10px;border:1px solid #d2d0ce;border-radius:4px;font-size:12px;font-family:inherit;background:#faf9f8;color:#323130}
+.appr-info input[readonly]{background:#f3f2f1;color:#605e5c}
+.appr-block .appr-title::before,.appr-title::before{content:none!important;display:none!important}
+@media (max-width:640px){.appr-select-row{grid-template-columns:1fr}.appr-info{grid-template-columns:1fr}}
 </style>
 
 
