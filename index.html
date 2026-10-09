@@ -447,10 +447,19 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
 })();
 </script>
 <style id="aps-mobile">
-/* APS 모바일(10-09 · aps-mobile) — 767px 이하 전용. 웹 화면 무변경 */
+/* APS 모바일(10-09 · 10-10 2차 · aps-mobile) — 767px 이하 전용. 웹 화면 무변경 */
 /* SCC: 본문 끝 style 블록(결재 라인 · 헤더 V3)이 이 블록보다 뒤라 겹치는 곳은 선택자를 한 단계 높였다. 인라인 style 을 이겨야 하는 곳만 !important.
    신청서 「Final signing off」 카드 3개 · DD 입력 · 기간 종료일이 화면 밖으로 밀려 문서가 771px 로 넓어지던 것을 1열로 접는다. 결재함 「처리」 열은 오른쪽에 고정. */
-@media (max-width: 767px) {
+@media screen and (max-width: 767px) {
+  /* ── iPhone(Safari) · Galaxy 대비 방어(10-10) — 글자 자동 확대 끔, 칸이 부모 폭을 넘지 않게, iOS 날짜 칸 높이·정렬 고정 ── */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  input, select, textarea, button { max-width: 100%; box-sizing: border-box; }
+  input[type=date], input[type=time], input[type=month], input[type=datetime-local] { min-width: 0; }
+  @supports (-webkit-touch-callout: none) {
+    input[type=date], input[type=time], input[type=month], input[type=datetime-local] { -webkit-appearance: none; appearance: none; display: block; min-height: 40px; line-height: normal; text-align: left; }
+    input::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
+  }
+
   /* ── 바탕 · 바깥 여백 12px ── */
   #app { padding: 12px 12px 8px; }
   .card { padding: 16px 14px; }
@@ -459,7 +468,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
 
   /* ── 헤더 V3 — 띠 한 줄 · 제목 한 단계 작게 · BU Admin 줄바꿈 허용 ── */
   .header.aps-hdr { padding: 0 14px 12px; margin-bottom: 12px; }
-  .aps-hdr .aps-band { margin: 0 -14px 10px; padding: 0 14px; gap: 10px; }
+  .aps-hdr .aps-band { flex: 0 0 auto; width: calc(100% + 28px); margin: 0 -14px 10px; padding: 0 14px; gap: 10px; }   /* 641~767px: 기본 flex-basis(100%+48px)가 줄인 여백(14px)과 안 맞아 문서가 7px 넘치던 것(10-10) */
   .aps-hdr .aps-band-crumb { flex: 1 1 auto; }
   .header-left .title { font-size: 16px; line-height: 1.3; }
   .aps-hdr .aps-sub { font-size: 11.5px; }
@@ -481,6 +490,9 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
   .appr-block .appr-info input, .appr-block .appr-select-row select, .extra-inp, .tmpl-text,
   .filter-bar select, .filter-bar input, #confirm-comment { font-size: 16px; }
   .form-group input[type="date"], .period-dates input[type="date"] { min-height: 40px; }
+  /* 같은 줄 · 같은 열 입력 높이 통일(10-10) — 글자칸 36 · 선택 38 · 날짜 40 이 섞여 있던 것을 40 으로 */
+  .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="email"], .form-group select,
+  .inline-row input, .inline-row select, .pay-inline input { height: 40px; }
   .inline-row input { min-width: 0; }
   .inline-row select { width: 120px; }
   /* Contract Period — 「start: [날짜]」 「end: [날짜]」 두 줄 */
@@ -490,17 +502,22 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
   .pay-inline { flex-wrap: wrap; }
   .pay-inline input { width: 90px; }
   /* 첨부 */
-  .file-row input[type="file"] { min-width: 0; }
+  .file-row input[type="file"] { min-width: 0; min-height: 36px; }
+  .file-row > .btn-file-reset { align-self: stretch; padding-top: 0; padding-bottom: 0; }   /* 파일 칸과 Reset 단추 높이 맞춤(32 vs 24, 10-10) */
   /* Template */
   .sub-list { margin-left: 18px; }
   .sub-list .two-col { grid-template-columns: 1fr; }
   .tmpl-text { min-width: 0; width: 100%; }
+  .sub-list .tmpl-text { flex: 1 1 140px; }   /* 「Other standard template ( title: )」 칸이 83px 로 눌리던 것 — 140px 이 안 되면 다음 줄로(10-10) */
   /* Compliance — 질문 위 · 답 아래 */
   .comp-row, .sub-row.show { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 0; }
   .comp-label.sub { padding-left: 12px; }
   #tab-form .comp-opts { justify-content: flex-start; flex-shrink: 1; gap: 8px 18px; }
   #tab-form .comp-opts label { white-space: normal; flex-wrap: wrap; min-height: 32px; }
   #tab-form .comp-opts .extra-inp { width: 130px; max-width: 100%; padding: 5px 8px; }
+  /* DD ID · 표준계약 아님 사유 칸 — 남은 줄 폭을 채워 긴 값이 잘려 보이지 않게(10-10) */
+  #tab-form .comp-opts label:has(> .extra-inp) { flex: 1 1 200px; flex-wrap: nowrap; }
+  #tab-form .comp-opts label > .extra-inp { flex: 1 1 80px; width: auto; min-width: 0; }
   .sub-row .comp-opts { padding-left: 12px; }
   /* Final signing off — 카드 3개를 세로로 꽉 채움 */
   #tab-form .comp-opts.sign-opts { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px; }
