@@ -1405,6 +1405,16 @@ function aacRolePill(role, status){
 function escAttr(s) {
   return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+// SharePoint 리치 텍스트 열은 ExternalClass 래퍼(div)로 감싸 온다(Objective · ContractTemplate 등).
+// 그런 값만 DOMParser(스크립트가 돌지 않는 문서)로 글자를 뽑고, 평문은 그대로 둔다 — 평문 속 '<' 를 태그로 오인해 지우지 않게.
+// 결과는 평문이므로 화면에 넣을 때는 다시 esc() 를 거친다(10-10, APS toText 와 같은 취지).
+function sccText(v) {
+  const s = String(v == null ? '' : v);
+  if (!/^\s*<(div|p|span)[\s>]/i.test(s)) return s;
+  let t = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(div|p|li)>/gi, '\n');
+  try { t = new DOMParser().parseFromString(t, 'text/html').body.textContent || ''; } catch (e) { t = t.replace(/<[^>]*>/g, ''); }
+  return t.replace(/ /g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
 
 async function api(path, method='GET', body=null, _retry=0) {
   const t = await token();
@@ -1767,7 +1777,7 @@ async function loadMyList() {
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     dynLoadEnd();
     renderMyList();
-  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a4262c">' + esc(e.message) + '</td></tr>'; }
 }
 
 // 조회한 내 신청 원본. 필터는 이 배열을 다시 걸러 그리기만 하므로
@@ -2165,31 +2175,31 @@ async function printApprovalDoc(reqId) {
 
 <div class="section">
   <div class="sec-title">기본 정보</div>
-  <div class="row"><span class="label">제목</span><span class="value">${f.Title||'-'}</span></div>
-  <div class="row"><span class="label">신청자</span><span class="value">${f.RequesterEmail||'-'}</span></div>
-  <div class="row"><span class="label">상태</span><span class="value">${f.Status||'-'}</span></div>
-  <div class="row"><span class="label">신청일</span><span class="value">${(f.RequestDate||'').substring(0,10)}</span></div>
+  <div class="row"><span class="label">제목</span><span class="value">${esc(f.Title||'-')}</span></div>
+  <div class="row"><span class="label">신청자</span><span class="value">${esc(f.RequesterEmail||'-')}</span></div>
+  <div class="row"><span class="label">상태</span><span class="value">${esc(f.Status||'-')}</span></div>
+  <div class="row"><span class="label">신청일</span><span class="value">${esc((f.RequestDate||'').substring(0,10))}</span></div>
 </div>
 
 <div class="section">
   <div class="sec-title">계약 정보</div>
   <div class="row"><span class="label">Title of Contract</span><span class="value" style="color:${f.ContractTitle?'inherit':'#a19f9d'}">${esc(f.ContractTitle||'(미입력)')}</span></div>
-  <div class="row"><span class="label">Type</span><span class="value">${f.ContractCompanyType||'-'}</span></div>
-  <div class="row"><span class="label">Contract Type</span><span class="value">${f.ContractType||'-'}</span></div>
+  <div class="row"><span class="label">Type</span><span class="value">${esc(f.ContractCompanyType||'-')}</span></div>
+  <div class="row"><span class="label">Contract Type</span><span class="value">${esc(f.ContractType||'-')}</span></div>
   <div class="row"><span class="label">Contract Partner</span><span class="value">${esc(f.ContractPartner||'-')}</span></div>
   <div class="row"><span class="label">Objective</span><span class="value">${esc((f.Objective||'-').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#58;/g,':').trim())}</span></div>
-  <div class="row"><span class="label">Contract Value</span><span class="value">${f.ContractValue ? Number(f.ContractValue).toLocaleString('en-US') + ' ' + (f.Currency||'') : '-'}</span></div>
-  <div class="row"><span class="label">Contract Period</span><span class="value">${f.PeriodType||'-'}${f.PeriodStart ? ' | ' + f.PeriodStart.substring(0,10) + ' ~ ' + (f.PeriodEnd ? f.PeriodEnd.substring(0,10) : 'No end') : ''}</span></div>
-  <div class="row"><span class="label">Payment Term</span><span class="value">${f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-'}</span></div>
-  <div class="row"><span class="label">Final Signing Off</span><span class="value"><b>${f.FinalSignOff||'-'}</b></span></div>
+  <div class="row"><span class="label">Contract Value</span><span class="value">${esc(f.ContractValue ? Number(f.ContractValue).toLocaleString('en-US') + ' ' + (f.Currency||'') : '-')}</span></div>
+  <div class="row"><span class="label">Contract Period</span><span class="value">${esc((f.PeriodType||'-') + (f.PeriodStart ? ' | ' + f.PeriodStart.substring(0,10) + ' ~ ' + (f.PeriodEnd ? f.PeriodEnd.substring(0,10) : 'No end') : ''))}</span></div>
+  <div class="row"><span class="label">Payment Term</span><span class="value">${esc(f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-')}</span></div>
+  <div class="row"><span class="label">Final Signing Off</span><span class="value"><b>${esc(f.FinalSignOff||'-')}</b></span></div>
 </div>
 
 ${(()=>{
-  const tmpl = (f.ContractTemplate||'').replace(/<[^>]*>/g,'').replace(/&#58;/g,':').replace(/&amp;/g,'&').trim();
+  const tmpl = (f.ContractTemplate||'').replace(/<[^>]*>/g,'').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
   const checkedList = tmpl ? tmpl.split(';').map(s=>s.trim()).filter(Boolean) : [];
   const isChecked = (label) => checkedList.includes(label);
   const otherStd = checkedList.find(c=>c.startsWith('- Other standard template'));
-  const row2 = (checked, label, indent) => '<div class="row"' + (indent?' style="padding-left:18px"':'') + '><span class="label" style="min-width:10px;color:' + (checked?'#107c10':'#c8c6c4') + '">' + (checked?'☑':'☐') + '</span><span class="value" style="color:' + (checked?'inherit':'#a19f9d') + '">' + label + '</span></div>';
+  const row2 = (checked, label, indent) => '<div class="row"' + (indent?' style="padding-left:18px"':'') + '><span class="label" style="min-width:10px;color:' + (checked?'#107c10':'#c8c6c4') + '">' + (checked?'☑':'☐') + '</span><span class="value" style="color:' + (checked?'inherit':'#a19f9d') + '">' + esc(label) + '</span></div>';
   return '<div class="section"><div class="sec-title">3. Contract Template</div>' +
     row2(isChecked('Standard template'), 'Standard template') +
     row2(isChecked('- Dealership / Service Center Agreement'), '- Dealership / Service Center Agreement', true) +
@@ -2208,16 +2218,16 @@ ${(()=>{
   const hasBiz = f.BizTermsReviewed || f.DDPerformed || f.PersonalInfo || f.SMRCompliance || f.FinalSignOff;
   if (!hasBiz) return '';
   let html = '<div class="section"><div class="sec-title">4. Compliance / Final Check</div>';
-  if (f.BizTermsReviewed) html += '<div class="row"><span class="label">Business / commercial terms reviewed</span><span class="value">' + f.BizTermsReviewed.toUpperCase() + '</span></div>';
+  if (f.BizTermsReviewed) html += '<div class="row"><span class="label">Business / commercial terms reviewed</span><span class="value">' + esc(f.BizTermsReviewed.toUpperCase()) + '</span></div>';
   if (f.DDPerformed) {
     const ddDetail = f.DDId ? ' &nbsp;(DD ID: ' + esc(f.DDId) + ')' : '';
-    html += '<div class="row"><span class="label">Is Compliance Due Diligence performed?</span><span class="value">' + f.DDPerformed.toUpperCase() + ddDetail + '</span></div>';
+    html += '<div class="row"><span class="label">Is Compliance Due Diligence performed?</span><span class="value">' + esc(f.DDPerformed.toUpperCase()) + ddDetail + '</span></div>';
   }
   if (f.PersonalInfo) {
-    const stdDetail = f.PersonalInfoStd ? '  →  Standard contract: ' + f.PersonalInfoStd.toUpperCase() : '';
-    html += '<div class="row"><span class="label">Is personal Information disclosed?</span><span class="value">' + f.PersonalInfo.toUpperCase() + stdDetail + '</span></div>';
+    const stdDetail = f.PersonalInfoStd ? '  →  Standard contract: ' + esc(f.PersonalInfoStd.toUpperCase()) : '';
+    html += '<div class="row"><span class="label">Is personal Information disclosed?</span><span class="value">' + esc(f.PersonalInfo.toUpperCase()) + stdDetail + '</span></div>';
   }
-  if (f.SMRCompliance) html += '<div class="row"><span class="label">Signing Party Designation (SMR)</span><span class="value">' + f.SMRCompliance.toUpperCase() + '</span></div>';
+  if (f.SMRCompliance) html += '<div class="row"><span class="label">Signing Party Designation (SMR)</span><span class="value">' + esc(f.SMRCompliance.toUpperCase()) + '</span></div>';
   html += '</div>';
   return html;
 })()}
@@ -2793,7 +2803,7 @@ async function verifyFileHash() {
       const hashMatched = records.value.find(r => r.fields.FileHash_SHA256 === hashHex);
       if (hashMatched) {
         resultEl.innerHTML = '✅ 무결성 확인 완료 — 파일이 변조되지 않았습니다.<br>' +
-          '<span style="font-weight:400;color:#107c10">Contract #' + hashMatched.fields.RequestID + ' · ' + hashMatched.fields.ContractTitle + ' · 승인일: ' + (hashMatched.fields.ApprovedDate||'').substring(0,10) + '</span>';
+          '<span style="font-weight:400;color:#107c10">Contract #' + hashMatched.fields.RequestID + ' · ' + esc(hashMatched.fields.ContractTitle) + ' · 승인일: ' + (hashMatched.fields.ApprovedDate||'').substring(0,10) + '</span>';
         resultEl.style.color = '#107c10';
       } else {
         resultEl.innerHTML = '⚠️ 등록된 승인 파일에서 일치하는 항목을 찾을 수 없습니다.<br>' +
@@ -2806,7 +2816,7 @@ async function verifyFileHash() {
     const savedHash = matched.fields.FileHash_SHA256 || '';
     if (hashHex === savedHash) {
       resultEl.innerHTML = '✅ 무결성 확인 완료 — 파일이 변조되지 않았습니다.<br>' +
-        '<span style="font-weight:400;color:#107c10">Contract #' + matched.fields.RequestID + ' · ' + matched.fields.ContractTitle + ' · 승인일: ' + (matched.fields.ApprovedDate||'').substring(0,10) + '</span>';
+        '<span style="font-weight:400;color:#107c10">Contract #' + matched.fields.RequestID + ' · ' + esc(matched.fields.ContractTitle) + ' · 승인일: ' + (matched.fields.ApprovedDate||'').substring(0,10) + '</span>';
       resultEl.style.color = '#107c10';
     } else {
       resultEl.innerHTML = '❌ 경고: 파일이 변조되었습니다!<br>' +
@@ -3085,9 +3095,9 @@ async function loadAdminList() {
       const f = item.fields;
       const hash = hashMap[String(item.id)] || '';
       const hashDisplay = hash ? '<span title="' + hash + '" style="font-family:monospace;font-size:.68rem;color:#605e5c;cursor:help">' + hash.substring(0,12) + '...</span>' : '<span style="color:#a19f9d;font-size:.75rem">-</span>';
-      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td>' + (f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (f.Title||'') + '</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.ContractPartner||'-') + '</td><td>' + (f.ContractCompanyType||'-') + '</td><td>' + (f.ContractType||'-') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
+      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td>' + esc(f.RequesterEmail||'') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.Title||'') + '</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.ContractPartner||'-') + '</td><td>' + esc(f.ContractCompanyType||'-') + '</td><td>' + esc(f.ContractType||'-') + '</td><td><span class="badge badge-' + escAttr(f.Status||'대기') + '">' + esc(f.Status||'대기') + '</span></td><td>' + fmtDate(f.RequestDate) + '</td><td>' + hashDisplay + '</td></tr>';
     }, '조회 결과가 없습니다.', 9);
-  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + esc(e.message) + '</td></tr>'; }
 }
 
 // ── Show Detail ──
@@ -3098,19 +3108,29 @@ async function showDetail(reqId) {
     const r = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId + '?$expand=fields');
     const f = r.fields;
     const sec = t => '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">' + t + '</div>';
-    const row = (l, v) => '<div class="modal-row"><div class="modal-label">' + l + '</div><div class="modal-value">' + (v||'-') + '</div></div>';
+    // 값은 기본으로 이스케이프한다 — 자유 입력(Objective · 계약 상대 · DD ID …)이 그대로 들어오는 자리다(10-10).
+    // 08-27 보안 수정이 상세의 Objective 를 빠뜨려 결재자 · 관리자 화면에서 스크립트가 돌 수 있었다.
+    // APS 상세와 같은 방식: 배지 · YES/NO 색 글자처럼 코드가 만든 HTML 만 rowRaw 로 넘긴다.
+    const rowRaw = (l, v) => '<div class="modal-row"><div class="modal-label">' + l + '</div><div class="modal-value">' + (v||'-') + '</div></div>';
+    const row = (l, v) => {
+      if (v === undefined || v === null || v === '') return rowRaw(l, '');
+      const t = sccText(v);
+      let hv = esc(t);
+      if (t !== String(v) && /\n/.test(t)) hv = hv.replace(/\n/g, '<br>');   // 리치 텍스트의 줄 구분은 살린다(평문은 예전처럼 한 줄)
+      return rowRaw(l, hv);
+    };
     // 상태 표시는 badge-* 클래스(목록과 동일)로 통일되어 색상 변수는 더 이상 사용하지 않는다.
 
     let html = sec('기본 정보') +
-      row('제목', esc(f.Title)) +
+      row('제목', f.Title) +
       row('신청자', f.RequesterEmail) +
-      row('상태', '<span class="badge-' + (function(s){var v=(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status) + '">' + (f.Status||'대기') + '</span>') +
+      rowRaw('상태', '<span class="badge-' + escAttr((function(s){var v=(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status)) + '">' + esc(f.Status||'대기') + '</span>') +
       row('신청일', fmtDate(f.RequestDate)) +
       sec('계약 정보') +
-      row('Title of Contract', esc(f.ContractTitle||'(미입력)')) +
+      row('Title of Contract', f.ContractTitle||'(미입력)') +
       row('Type', f.ContractCompanyType) +
       row('Contract Type', f.ContractType) +
-      row('Contract Partner', esc(f.ContractPartner)) +
+      row('Contract Partner', f.ContractPartner) +
       row('Objective', f.Objective) +
       row('Contract Value', f.ContractValue ? Number(f.ContractValue).toLocaleString() + ' ' + (f.Currency||'') : '-') +
       row('Contract Period', (f.PeriodType||'') + (f.PeriodStart ? ' | ' + f.PeriodStart + ' ~ ' + (f.PeriodEnd||'No end') : '')) +
@@ -3131,7 +3151,7 @@ async function showDetail(reqId) {
       const tmplRow = (checked, label, indent) =>
         '<div style="padding:3px 0' + (indent?';padding-left:20px':'') + ';font-size:13px;display:flex;align-items:flex-start;gap:6px">' +
         '<span style="color:' + (checked?'#107c10':'#c8c6c4') + ';flex-shrink:0;font-size:14px">' + (checked?'☑':'☐') + '</span>' +
-        '<span style="color:' + (checked?'inherit':'#a19f9d') + '">' + label + '</span></div>';
+        '<span style="color:' + (checked?'inherit':'#a19f9d') + '">' + esc(label) + '</span></div>';
       const tmplHtml =
         tmplRow(isChecked('Standard template'), 'Standard template') +
         tmplRow(isChecked('- Dealership / Service Center Agreement'), '- Dealership / Service Center Agreement', true) +
@@ -3150,21 +3170,21 @@ async function showDetail(reqId) {
     const hasCompliance = f.BizTermsReviewed || f.DDPerformed || f.PersonalInfo || f.SMRCompliance || f.FinalSignOff;
     if (hasCompliance) {
       html += sec('4. Compliance / Final Check');
-      const yn = v => v ? '<span style="font-weight:600;color:' + (v.toLowerCase()==='yes'?'#107c10':'#a4262c') + '">' + v.toUpperCase() + '</span>' : '-';
-      html += row('Business / commercial terms reviewed', yn(f.BizTermsReviewed));
+      const yn = v => v ? '<span style="font-weight:600;color:' + (v.toLowerCase()==='yes'?'#107c10':'#a4262c') + '">' + esc(v.toUpperCase()) + '</span>' : '-';
+      html += rowRaw('Business / commercial terms reviewed', yn(f.BizTermsReviewed));
       if (f.DDPerformed) {
         const ddDetail = f.DDPerformed.toLowerCase()==='yes' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(DD ID: ' + esc(f.DDId) + ')</span>' : (f.DDPerformed.toLowerCase()==='no' && f.DDId ? ' &nbsp;<span style="color:#605e5c;font-size:12px">(' + esc(f.DDId) + ')</span>' : '');
-        html += row('Is Compliance Due Diligence performed?', yn(f.DDPerformed) + ddDetail);
+        html += rowRaw('Is Compliance Due Diligence performed?', yn(f.DDPerformed) + ddDetail);
       }
       if (f.PersonalInfo) {
         const stdRaw = f.StdContract || '';
         const stdVal = stdRaw.split(' ')[0]; // 'yes' or 'no'
         const stdNote = stdRaw.match(/\(No reason:\s*(.+?)\)$/);
-        const stdDetail = stdRaw ? ' &nbsp;→&nbsp; Standard contract: ' + yn(stdVal) + (stdNote ? ' &nbsp;( ' + stdNote[1] + ' )' : '') : '';
-        html += row('Is personal Information disclosed?', yn(f.PersonalInfo) + stdDetail);
+        const stdDetail = stdRaw ? ' &nbsp;→&nbsp; Standard contract: ' + yn(stdVal) + (stdNote ? ' &nbsp;( ' + esc(stdNote[1]) + ' )' : '') : '';
+        html += rowRaw('Is personal Information disclosed?', yn(f.PersonalInfo) + stdDetail);
       }
-      html += row('Signing Party Designation<br><span style="font-size:.88em;opacity:.72;white-space:nowrap">(SMR)</span>', yn(f.SMRCompliance));
-      if (f.FinalSignOff) html += row('Final signing off', '<span style="font-size:13px">' + f.FinalSignOff + '</span>');
+      html += rowRaw('Signing Party Designation<br><span style="font-size:.88em;opacity:.72;white-space:nowrap">(SMR)</span>', yn(f.SMRCompliance));
+      if (f.FinalSignOff) html += rowRaw('Final signing off', '<span style="font-size:13px">' + esc(f.FinalSignOff) + '</span>');
     }
 
     // Approvals
@@ -3188,8 +3208,8 @@ async function showDetail(reqId) {
           apprList.map(a => {
             const af = a.fields;
             return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 12px;border-bottom:1px solid #edebe9">' +
-              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=aacRoleBase(af.ApproverRole),_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q+aacRolePill(af.ApproverRole, af.Status);})() + '</div>' +
-              '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
+              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=aacRoleBase(af.ApproverRole),_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+esc(_o)+'차</b> 결재자'+esc(_q)+aacRolePill(af.ApproverRole, af.Status);})() + '</div>' +
+              '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + esc(af.ApproverName||'') + ' · ' + esc(af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
               (() => {
               const raw = (() => {
@@ -3213,7 +3233,7 @@ async function showDetail(reqId) {
                     const isRadio = l.trim().startsWith('→') || l.trim().startsWith('  →');
                     const isComment = l.trim().startsWith('Comment:') || l.trim().startsWith('Tax risk');
                     const color = isRadio ? '#0078d4' : isComment ? '#605e5c' : (l.includes('☑') ? '#107c10' : '#9ca3af');
-                    return '<div style="font-size:11px;color:' + color + ';padding-left:' + (isRadio||isComment?'12px':'0') + '">' + l.trim() + '</div>';
+                    return '<div style="font-size:11px;color:' + color + ';padding-left:' + (isRadio||isComment?'12px':'0') + '">' + esc(l.trim()) + '</div>';
                   }).join('') +
                   '</div></div>';
               }
@@ -3226,10 +3246,10 @@ async function showDetail(reqId) {
               } else {
                 noteOnly = raw.trim();
               }
-              if (noteOnly) html += '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + noteOnly + '</div>';
+              if (noteOnly) html += '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + esc(noteOnly) + '</div>';
               return html;
             })() +
-              '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + (af.Status||'') + '</span></div>';
+              '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + esc(af.Status||'') + '</span></div>';
           }).join('') + '</div>';
         // 내 결재 대기 건 버튼
         const reqStatus = (f.Status||'').trim();
@@ -3256,15 +3276,15 @@ async function showDetail(reqId) {
         if (parts.length >= 4 && parts[1].trim() === 'CONTRACT_DOC') {
           const driveId = parts[2].trim();
           const itemId  = parts[3].trim();
-          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + ' <span style="font-size:11px;color:#107c10;font-weight:600">[Contract Doc]</span></a></div>';
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + esc(name) + ' <span style="font-size:11px;color:#107c10;font-weight:600">[Contract Doc]</span></a></div>';
         }
         // 일반 포맷: 파일명||driveId||itemId
         if (parts.length === 3) {
           const driveId = parts[1].trim();
           const itemId  = parts[2].trim();
-          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + esc(name) + '</a></div>';
         }
-        return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
+        return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + esc(name) + '</div>';
       }).filter(Boolean).join('');
     }
     const secFiles = '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">첨부파일</div>';
@@ -3286,7 +3306,7 @@ async function showDetail(reqId) {
             const approvedLinks = folderData.value.map(item => {
               return '<div style="margin:4px 0">' +
                 '<a href="#" class="approved-dl-link" data-drive="' + encodeURIComponent(attDrive.id) + '" data-id="' + encodeURIComponent(item.id) + '" data-name="' + encodeURIComponent(item.name) + '" ' +
-                'style="color:#107c10;font-weight:600;font-size:13px;text-decoration:underline;cursor:pointer">⬇ ' + item.name + '</a>' +
+                'style="color:#107c10;font-weight:600;font-size:13px;text-decoration:underline;cursor:pointer">⬇ ' + esc(item.name) + '</a>' +
               '</div>';
             }).join('');
             approvedFileHtml =
@@ -3576,6 +3596,41 @@ function applyFlexApprovers(){
   }
 }
 
+// ── 상신 중단 건 자동 철회(10-10) ───────────────────────────────────────
+// 신청 항목(STK_Contracts)을 만든 뒤 번호 매기기 · 첨부 업로드 · 결재행 생성이 실패했을 때 부른다.
+// Goodwill(gwRollbackIncomplete) · ACC Voucher(rollbackIncompleteVoucher, 08-18)와 같은 방식이다:
+// · 만들어진 결재행은 「철회(잠김)」 으로 잠가 결재함 · APS 에 나타나지 않게 한다.
+// · 신청은 「철회」 로 닫는다 — 기존 상태값이라 목록 · APS · 통계가 이미 종료 건으로 처리한다(새 상태값 · 새 열 없음).
+// · 지우지 않는다 — 감사 흔적과 이미 올라간 첨부를 남긴다. 자동 철회였다는 사실과 원인은 Logging_data 에 남긴다.
+async function sccRollbackIncomplete(reqId, stage, failFile, madeIds, err) {
+  const vid = 'SCC-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId;
+  const base = '/sites/' + siteId + '/lists/';
+  const errMsg = String((err && err.message) || err || '');
+  let ok = false, locked = 0, lockFail = 0;
+  try {
+    // 잠글 행 — 응답으로 받은 id 와 서버에서 다시 읽은 행을 합친다(응답을 못 받고 만들어진 행까지)
+    const ids = new Set((madeIds || []).map(String));
+    try {
+      const rows = await apiAll(base + LIST_APR + '/items?$expand=fields&$top=50&$filter=fields/RequestID eq ' + parseInt(reqId));
+      (rows.value || []).forEach(it => ids.add(String(it.id)));
+    } catch (e) { console.warn('[신청] 결재 행 조회 실패 — 응답으로 받은 행만 잠급니다:', e && e.message); }
+    for (const id of ids) {
+      try { await api(base + LIST_APR + '/items/' + id, 'PATCH', { fields: { Status: '철회(잠김)' } }); locked++; }
+      catch (e) { lockFail++; console.warn('[신청] 결재 행 잠금 실패:', id, e && e.message); }
+    }
+    await api(base + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '철회' } });
+    ok = lockFail === 0;
+  } catch (e) { console.error('[신청] 자동 철회 실패:', e && e.message); }
+  try { logAction('SCC', '신청 자동 철회', { reqId: reqId, id: vid, stage: stage, file: failFile || '', error: errMsg.slice(0, 300), lockedApprovals: locked, lockFailed: lockFail, ok: ok }); } catch (e) {}
+  const why = stage === 'approvers' ? '결재선을 만드는 중 오류가 나'
+            : stage === 'title' ? '신청 번호를 매기는 중 오류가 나'
+            : '첨부 파일' + (failFile ? '(' + failFile + ')' : '') + ' 업로드에 실패해';
+  alert(ok
+    ? '⚠️ 신청을 완료하지 못했습니다.\n\n' + why + ' 이 신청(' + vid + ')은 자동으로 철회 처리했습니다.\n결재는 시작되지 않았으니 다시 신청해 주세요. 입력한 내용은 그대로 두었습니다.\n\n(오류: ' + errMsg + ')'
+    : '⚠️ 신청을 완료하지 못했습니다.\n\n' + why + ' 자동 철회를 끝내지 못했습니다.\n다시 신청하지 마시고 IT팀에 ' + vid + ' 를 알려 주세요.\n\n(오류: ' + errMsg + ')');
+  try { loadMyList(); } catch (e) {}
+}
+
 async function submitForm() {
   const submitBtn = document.getElementById('btn-submit');
   if (submitBtn && submitBtn.disabled) return; // 중복 제출 방지
@@ -3689,74 +3744,100 @@ async function submitForm() {
 
     const item = await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items', 'POST', { fields });
     const reqId = parseInt(item.id);
-    await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: 'SCC-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId } });
-
-    // ── 파일 업로드 → AttachedFiles/SCC_Requests_AttachedFiles/{reqId}/
-    const fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
-    const fileLinks = [];
+    // ── 여기부터는 신청 항목이 이미 만들어진 상태다(10-10) ──
+    // 번호 매기기 · 첨부 업로드 · 결재행 생성 중 하나라도 실패하면 신청을 결재 흐름에서 빼고(자동 철회) 무엇이 실패했는지 알린 뒤 멈춘다.
+    // 예전에는 업로드 실패를 console 에만 남기고 계속 진행했고, 결재행 일부만 남은 채 「오류」 알림만 떠 같은 건을 다시 내 중복이 생겼다.
+    let _stage = 'title', _failFile = '';
+    const _aprCreated = [];
     try {
+      await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Title: 'SCC-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId } });
+
+      // ── 파일 업로드 → AttachedFiles/SCC_Requests_AttachedFiles/{reqId}/
+      // 예전에는 업로드 실패를 console 에만 남기고 결재행까지 만들어, 계약서 없는 신청이 결재로 넘어갈 수 있었다(10-10).
+      // 이제 첨부가 하나라도 실패하면 거기서 멈춘다 — 계약서(CONTRACT_DOC)가 실제로 올라간 것이 상신 조건이다.
+      _stage = 'upload';
+      const fileIds = ['f-doc', 'att1', 'att2', 'att3', 'att4'];
+      const fileLinks = [];
       const drivesData = await api('/sites/' + siteId + '/drives');
-      const drive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+      const drive = (drivesData.value || []).find(d => d.name === 'AttachedFiles') || (drivesData.value || [])[0];
+      if (!drive) throw new Error('첨부 파일 저장 위치를 찾지 못했습니다');
       const t = await token();
       for (const id of fileIds) {
         const el = document.getElementById(id);
         if (!el || !el.files.length) continue;
         const file = el.files[0];
-        try {
-          const buf = await file.arrayBuffer();
-          const res = await fetch(
-            GRAPH + '/drives/' + drive.id + '/root:/SCC_Requests_AttachedFiles/' + reqId + '/' + encodeURIComponent(file.name) + ':/content',
-            { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' }, body: buf }
-          );
-          if (res.ok) {
-            const u = await res.json();
-            // f-doc (Contract document)는 CONTRACT_DOC 태그로 구분
-            const tag = (id === 'f-doc') ? '||CONTRACT_DOC||' : '||';
-            fileLinks.push(file.name + tag + drive.id + '||' + u.id);
-          } else { console.error('Upload failed:', res.status, await res.text()); }
-        } catch(fe) { console.error('File upload error:', fe); }
+        _failFile = file.name;
+        const buf = await file.arrayBuffer();
+        const res = await fetch(
+          GRAPH + '/drives/' + drive.id + '/root:/SCC_Requests_AttachedFiles/' + reqId + '/' + encodeURIComponent(file.name) + ':/content',
+          { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' }, body: buf }
+        );
+        if (!res.ok) {
+          let _bt = ''; try { _bt = await res.text(); } catch (_) {}
+          console.error('Upload failed:', res.status, _bt);
+          throw new Error('업로드 실패 (HTTP ' + res.status + ')');
+        }
+        const u = await res.json();
+        // f-doc (Contract document)는 CONTRACT_DOC 태그로 구분
+        const tag = (id === 'f-doc') ? '||CONTRACT_DOC||' : '||';
+        fileLinks.push(file.name + tag + drive.id + '||' + u.id);
       }
-      if (fileLinks.length) {
-        await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', {
-          fields: { AttachedFiles: fileLinks.join(';') }
-        });
+      _failFile = '';
+      if (!fileLinks.some(x => x.indexOf('||CONTRACT_DOC||') >= 0)) {
+        _failFile = ((document.getElementById('f-doc').files || [])[0] || {}).name || 'Contract document';
+        throw new Error('계약서 파일이 올라가지 않았습니다');
       }
-    } catch(fe) { console.error('Drive error:', fe); }
+      _stage = 'attach';
+      await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', {
+        fields: { AttachedFiles: fileLinks.join(';') }
+      });
 
-    // 결재자 등록
-    // CFO·RD 추가 조건: Final signing off 에서 "RD signature or corporate chop" 또는 "Chop only" 선택 시
-    // (09-07 문구 변경 전 기록은 "signatures and corporate chop" 으로 저장돼 있다. 둘 다 'corporate chop' 을 포함하므로 같은 판정)
-    const signOffVal = (signChecked.join(' ')).toLowerCase();
-    const needChopApprovers = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
+      // 결재자 등록
+      // CFO·RD 추가 조건: Final signing off 에서 "RD signature or corporate chop" 또는 "Chop only" 선택 시
+      // (09-07 문구 변경 전 기록은 "signatures and corporate chop" 으로 저장돼 있다. 둘 다 'corporate chop' 을 포함하므로 같은 판정)
+      const signOffVal = (signChecked.join(' ')).toLowerCase();
+      const needChopApprovers = signOffVal.includes('corporate chop') || signOffVal.includes('chop only');
 
-    const isSales = document.getElementById('sel-type').value === 'Sales';
-    const approvers = [
-      { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(Line Manager)', order: 1 },
-    ];
-    if (document.getElementById('a2-email').value) {
-      approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Department Head)', order: 2 });
-    }
-    approvers.push(A3); // 3차: Compliance Director (고정)
-    if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
-    const acctOrder = isSales ? 5 : 4;
-    approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Head)' });
-    if (needChopApprovers) {
-      // chop 조건: CFO → RD 순으로 추가 (CEO 결재 라인 제거됨)
-      approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
-      approvers.push({ ...ARD, order: acctOrder+2, role: (acctOrder+2)+'차결재자(RD)' });
-    }
-    // chop 조건 없으면 Gina Shin이 마지막 (RD 추가 안 함)
+      const isSales = document.getElementById('sel-type').value === 'Sales';
+      const approvers = [
+        { name: document.getElementById('a1-name').value, email: document.getElementById('a1-email').value, role: '1차결재자(Line Manager)', order: 1 },
+      ];
+      if (document.getElementById('a2-email').value) {
+        approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Department Head)', order: 2 });
+      }
+      approvers.push(A3); // 3차: Compliance Director (고정)
+      if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
+      const acctOrder = isSales ? 5 : 4;
+      approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Head)' });
+      if (needChopApprovers) {
+        // chop 조건: CFO → RD 순으로 추가 (CEO 결재 라인 제거됨)
+        approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
+        approvers.push({ ...ARD, order: acctOrder+2, role: (acctOrder+2)+'차결재자(RD)' });
+      }
+      // chop 조건 없으면 Gina Shin이 마지막 (RD 추가 안 함)
 
-    for (const a of approvers) {
-      await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
-        Title: 'SCC-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId + '-' + a.order,
-        RequestID: reqId,
-        ApproverEmail: a.email,
-        ApproverName: a.name,
-        ApproverRole: a.role,
-        ApprovalOrder: a.order,
-        Status: a.order === 1 ? '대기' : '대기(잠김)'
-      }});
+      _stage = 'approvers';
+      for (const a of approvers) {
+        const _ar = await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items', 'POST', { fields: {
+          Title: 'SCC-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId + '-' + a.order,
+          RequestID: reqId,
+          ApproverEmail: a.email,
+          ApproverName: a.name,
+          ApproverRole: a.role,
+          ApprovalOrder: a.order,
+          Status: a.order === 1 ? '대기' : '대기(잠김)'
+        }});
+        if (_ar && _ar.id) _aprCreated.push(_ar.id);   // 실패 시 「철회(잠김)」 으로 잠글 행
+      }
+      // 만들어진 행 수를 서버에서 다시 센다(POST 가 성공 응답을 받고도 반영되지 않는 경우까지) — GW · ACC 와 같은 검증.
+      // 모자라면 되돌린다. 조회 자체가 실패하면 생성은 됐을 수 있으므로 되돌리지 않는다.
+      let _aprCnt = -1;
+      try { _aprCnt = ((await apiAll('/sites/' + siteId + '/lists/' + LIST_APR + '/items?$expand=fields&$top=50&$filter=fields/RequestID eq ' + reqId)).value || []).length; }
+      catch (ce) { console.warn('[신청] 결재선 검증 조회 실패(생성은 완료됨):', ce && ce.message); }
+      if (_aprCnt >= 0 && _aprCnt < approvers.length) throw new Error('결재선이 ' + _aprCnt + '/' + approvers.length + '단계만 만들어졌습니다');
+    } catch (_se) {
+      await sccRollbackIncomplete(reqId, _stage, _failFile, _aprCreated, _se);
+      return;   // 입력 내용은 그대로 둔다 — 확인 후 다시 제출할 수 있게
     }
 
     alert('✅ 신청이 완료되었습니다! (번호: ' + reqId + ')');
