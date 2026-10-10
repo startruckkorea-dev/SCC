@@ -2373,8 +2373,11 @@ ${(()=>{
     pw.document.close();
     pw.focus();
     setTimeout(() => { pw.print(); }, 600);
+    // 출력 기록(10-10) — 인쇄 창을 연 뒤. logAction 은 기다리지 않는 기록이라 인쇄가 늦어지지 않는다(실패해도 콘솔 경고만)
+    try { logAction('SCC', '승인내역 출력', { 신청: f.Title || '', id: String(reqId), 제목: String(f.ContractTitle || '').slice(0, 200), 상태: f.Status || '', 종류: '승인내역(인쇄 창)', 결재단계: aprs.length }); } catch (_le) {}
 
   } catch(e) {
+    try { logAction('SCC', '승인내역 출력 실패', { id: String(reqId), 종류: '승인내역(인쇄 창)', 오류: String((e && e.message) || e).slice(0, 300) }); } catch (_le) {}
     alert('출력 오류: ' + e.message);
   } finally {
     loading(false);
