@@ -2166,6 +2166,9 @@ async function printApprovalDoc(reqId) {
 
     const now = new Date();
     const nowStr = now.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'}) + ' ' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'});
+    // Objective 는 리치 텍스트 열 — 상세 화면(row)과 같은 sccText 로 래퍼 · 엔티티를 모두 푼다(10-12). 예전엔 &amp; · &#58; 두 가지만 풀고 태그를 지워,
+    // 다른 엔티티(&lt; · &#39; …)는 글자로 남고 여러 줄은 단어가 붙어 나왔다. 평문 값은 sccText 가 손대지 않는다.
+    const objText = sccText(f.Objective || '').trim() || '-';
 
     // 출력용 HTML 생성
     const printHtml = `<!DOCTYPE html>
@@ -2225,7 +2228,7 @@ async function printApprovalDoc(reqId) {
   <div class="row"><span class="label">Type</span><span class="value">${esc(f.ContractCompanyType||'-')}</span></div>
   <div class="row"><span class="label">Contract Type</span><span class="value">${esc(f.ContractType||'-')}</span></div>
   <div class="row"><span class="label">Contract Partner</span><span class="value">${esc(f.ContractPartner||'-')}</span></div>
-  <div class="row"><span class="label">Objective</span><span class="value">${esc((f.Objective||'-').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#58;/g,':').trim())}</span></div>
+  <div class="row"><span class="label">Objective</span><span class="value">${esc(objText)}</span></div>
   <div class="row"><span class="label">Contract Value</span><span class="value">${esc(f.ContractValue ? Number(f.ContractValue).toLocaleString('en-US') + ' ' + (f.Currency||'') : '-')}</span></div>
   <div class="row"><span class="label">Contract Period</span><span class="value">${esc((f.PeriodType||'-') + (f.PeriodStart ? ' | ' + f.PeriodStart.substring(0,10) + ' ~ ' + (f.PeriodEnd ? f.PeriodEnd.substring(0,10) : 'No end') : ''))}</span></div>
   <div class="row"><span class="label">Payment Term</span><span class="value">${esc(f.PaymentDays ? 'Within ' + f.PaymentDays + ' days from invoice date' : '-')}</span></div>
@@ -3292,17 +3295,17 @@ async function showDetail(reqId) {
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + esc(af.ApproverName||'') + ' · ' + esc(af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
               (() => {
-              const raw = (() => {
-                const s = af.Comment || '';
-                return s.replace(/<div[^>]*>/gi,'').replace(/<\/div>/gi,'').replace(/<[^>]*>/g,'')
-                  .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
-              })();
+              // 결재 의견(Comment) · 체크리스트(ChecklistSummary)는 SharePoint 리치 텍스트 열이라 ExternalClass 래퍼 div 와 &#58;(:) 같은 엔티티를 붙여 온다.
+              // 10-10 XSS 차단(852338c)에서 줄마다 esc() 를 씌우면서 이 원문이 글자 그대로 보였다 — 체크리스트 첫 줄 「<div class="ExternalClass…">」,
+              // 「…valid&#58; N/A」, 끝 줄 「Comment&#58; -</div>」, 의견의 「&#58;」(10-12 신고). 위 상세 칸(row)처럼 sccText 로 먼저 글자만 뽑고
+              // (DOMParser — 스크립트가 돌지 않는 문서, 줄바꿈 유지) 화면에 넣을 때 esc 는 그대로 둔다. 평문 값은 sccText 가 손대지 않는다.
+              const raw = sccText(af.Comment || '').trim();
               const apprIdStr = String(af.id || '');
               // SharePoint에서 로드한 체크리스트 응답 찾기
               const clResp = clResponses.find(r => String(r.fields.ApprovalID) === apprIdStr);
               let html = '';
               if (clResp && clResp.fields.ChecklistSummary) {
-                const lines = clResp.fields.ChecklistSummary.replace('[체크리스트]','').trim().split('\n').filter(l=>l.trim());
+                const lines = sccText(clResp.fields.ChecklistSummary).replace('[체크리스트]','').trim().split('\n').filter(l=>l.trim());
                 // 체크된 항목이나 라디오 선택이 하나라도 있을 때만 표시
                 const hasContent = lines.some(l => l.includes('☑') || l.trim().startsWith('→') || l.trim().startsWith('Comment'));
                 if (hasContent)
