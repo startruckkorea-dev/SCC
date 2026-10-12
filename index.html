@@ -2133,6 +2133,27 @@ async function confirmApproval() {
 }
 
 
+/* ═══ APS 공통 — 출력물 「출력자」 (APS-PRINTER v1 · 2026-10-12) ═══════════════════════════════════════
+   출력물(PDF 머리띠 · 인쇄 창 머리글)의 「출력일시」 왼쪽에 「출력자: 이름」 을 함께 적는다 — 출력물만 보고도 누가 뽑았는지 남게(10-12 요청).
+   · 이름은 로그인 계정의 표시 이름(화면 오른쪽 위 계정과 같은 값), 없으면 메일. 계정을 못 읽으면 예전처럼 「출력일시」 만 적는다.
+   · 오른쪽 글이 길어진 만큼 왼쪽 제목(긴 첨부 파일명 등)이 닿으면 제목 가운데를 「…」 로 줄인다 — 앞(「첨부파일: 」 · 이름 앞부분)과
+     끝(확장자 · 「(encrypted)」 같은 상태)은 남긴다. 예전엔 긴 파일명이 오른쪽 「출력일시」 위에 겹쳐 그려졌다.
+   고칠 때는 이 블록을 모든 시스템에서 함께 고친다. SCC 는 승인내역 출력이 HTML 인쇄 창이라 캔버스 머리띠용 apsFitText 는 두지 않는다. */
+function apsPrinterName() {
+  let a = null;
+  try { a = typeof user !== 'undefined' ? user : null; } catch (e) {}
+  // 제어 · 서식 문자(보이지 않는 글자 · 양방향 덮어쓰기 U+202E 등)는 지운다 — 이름이 뒤의 「출력일시」 를 뒤집어 보이게 하지 않게(외부 게스트 이름은 상대 회사가 정한다)
+  const s = String((a && (a.name || a.email || a.username)) || '')
+    .replace(/[\u0000-\u0008\u000E-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g, '').replace(/\s+/g, ' ').trim();
+  const c = Array.from(s);
+  return c.length > 40 ? c.slice(0, 39).join('') + '…' : s;   // 아주 긴 이름은 줄여 머리띠를 넘치지 않게
+}
+function apsPrintStamp(ds) {   // ds = '출력일시: …' → '출력자: 이름  ·  출력일시: …'
+  const n = apsPrinterName();
+  return n ? '출력자: ' + n + '  ·  ' + ds : ds;
+}
+/* ═══ /APS-PRINTER v1 ═══════════════════════════════════════════════════════════════════════════ */
+
 async function printApprovalDoc(reqId) {
   try {
     loading(true, '출력 준비 중...', '승인내역 PDF 생성 중입니다.');
@@ -2155,6 +2176,8 @@ async function printApprovalDoc(reqId) {
   .header h1{margin:0;font-size:14px;font-weight:700}
   .header .sub{font-size:10px;opacity:.7;margin-top:3px}
   .header .meta{text-align:right;font-size:10px;opacity:.75}
+  /* 「출력자: 이름  ·  출력일시: …」(APS-PRINTER v1 · 10-12) — 가운뎃점 양옆 공백을 PDF 머리띠와 같게 둔다. 보통은 한 줄, 아주 긴 이름만 빈칸에서 줄을 바꿔 머리글 밖으로 넘치지 않게 */
+  .header .meta .meta-stamp{white-space:pre-wrap}
   .chop-notice{background:#f0f4ff;border-left:3px solid #1d4ed8;border-radius:4px;padding:10px 14px;margin-bottom:8px;font-size:10px;color:#1e3a5f;line-height:1.7}
   /* Chop 처리 후 STK B2B 저장 경로 — 인쇄물에서도 눈에 띄되 본문을 밀지 않도록 압축해서 표기 */
   /* 저장 경로는 다른 시스템의 주의 안내와 같은 노란 배너 배색을 쓴다 (#fff4ce / #f0d9a0 / #7d5700) */
@@ -2179,7 +2202,7 @@ async function printApprovalDoc(reqId) {
 </style></head><body>
 <div class="header">
   <div><h1>STK Contract Approval Record</h1><div class="sub">chop 승인 목적용 승인내역</div></div>
-  <div class="meta">출력일시: ${nowStr}<br>Contract #${reqId}</div>
+  <div class="meta"><span class="meta-stamp">${esc(apsPrintStamp('출력일시: ' + nowStr))}</span><br>Contract #${reqId}</div>
 </div>
 <div class="chop-notice">본 문서는 Final signing off 선택 조항에서 <b>RD signature or corporate chop</b> 또는 <b>Chop only</b> 조건을 선택하여 chop(법인인감) 날인 승인 목적으로 출력된 결재 내역이며, 그 외의 목적으로는 사용이 불가합니다.<br>모든 결재 승인 처리 이후, 해당 내용 출력하여 <b>Accounting 부서에 증빙 제출 → Chop 처리</b> 진행하시면 됩니다.</div>
 <div class="chop-path">
