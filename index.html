@@ -1343,12 +1343,37 @@ function logAction(systemName, action, detail) {
         timestampKST: `${dateStr} ${p(now.getUTCHours())}:${p(now.getUTCMinutes())}:${p(now.getUTCSeconds())}`,
         user: rawUser, system: systemName, action, detail: detail || {}
       });
-      await fetch(GRAPH + '/drives/' + driveId + '/root:' + path + ':/content', {
+      const _lr = await fetch(GRAPH + '/drives/' + driveId + '/root:' + path + ':/content', {
         method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body
       });
+      // 저장이 거부돼도(403 · 429 · 5xx) 흔적이 없던 것 — APS(10-10)처럼 콘솔에 경고만 남긴다(10-15). 원 기능엔 영향 없음
+      if (_lr && !_lr.ok) console.warn('[Log] 기록 실패(무시됨, 원 기능엔 영향 없음): HTTP ' + _lr.status + ' —', systemName, action);
     } catch(e) { console.warn('[Log] 기록 실패(무시됨):', e.message); }
   })();
 }
+/* ══ 데이터 변경 기록(10-15) ══
+   상신 · 결재 승인 · 반려 · 철회 · 관리자 데이터 변경을 위 logAction 으로 Logging_data 에 남긴다.
+   action 이름 · detail 모양은 APS 통합 결재함(Logging_data/APS 「결재 승인」 · 「결재 반려」)에 맞춘다 —
+   신청번호 · 제목 · 결과 · 차수 · 결재자 · 처리자 · 대리 · 역할 · 의견 글자 수(의견 원문 · 금액 · 계좌 · 연락처 같은 개인정보는 넣지 않는다).
+   IT 계정 제외 규칙(10-01, IT Manager · IT system service)은 logAction 안에서 그대로 적용된다(감사 예외를 두지 않는다 — 10-15 결정).
+   실제 저장(Graph 쓰기)이 끝난 뒤에만 부르고 기다리지 않는다. detail 을 만들다 오류가 나도 원 기능으로 번지지 않게 감싼다. */
+function logChange(systemName, action, mk) {
+  try { logAction(systemName, action, typeof mk === 'function' ? mk() : (mk || {})); }
+  catch (e) { console.warn('[Log] 기록 생략(원 기능엔 영향 없음):', action, e && e.message); }
+}
+function logAprDetail(f, extra) {   // 결재행 fields(처리 전 값) → APS 와 같은 차수 · 결재자 · 처리자 · 대리 · 역할
+  f = f || {};
+  const orig = String(f.ApproverEmail || '');
+  let dg = null; try { dg = (typeof aacDelegatorOf === 'function') ? aacDelegatorOf(orig) : null; } catch (e) {}
+  return Object.assign({
+    차수: f.ApprovalOrder == null ? '' : f.ApprovalOrder,
+    결재자: orig,
+    처리자: String((typeof user !== 'undefined' && user && (user.email || user.username)) || ''),
+    대리: dg ? '예 — ' + (f.ApproverName || dg.name || orig) + ' 님 대신' : '',
+    역할: String(f.ApproverRole || '')
+  }, extra || {});
+}
+function logErrText(e) { return String((e && e.message) || e || '').slice(0, 200); }
 // ── 첨부파일 용량 제한 ─────────────────────────────────────────────
 // 화면 안내 문구도 같은 상수에서 채운다 (아래 setFileLimitNote).
 // 검사와 안내 문구가 같은 값을 보도록 한 곳에서만 정의한다.
@@ -2420,13 +2445,19 @@ ${(()=>{
 }
 
 async function processApproval(apprId, action, reqId, comment='', checklistData=null) {
+  // 결재 처리 기록(10-15) — APS 통합 결재함과 같은 「결재 승인」 · 「결재 반려」. 결재행을 쓴 뒤에만 남기고, 쓰기 전 오류는 「…실패」
+  const _lgAct = action==='반려' ? '결재 반려' : '결재 승인';
+  let _lgF = null, _lgW = false, _lgRes = '', _lgPost = '';
+  const _lg = (what, res, ex) => logChange('SCC', what, () => Object.assign({ 신청번호: Number(reqId), 제목: String((_lgF && _lgF.Title) || '').replace(/-\d+$/, ''), 결과: res }, logAprDetail(_lgF, { 의견글자수: String(comment||'').length, 체크리스트: checklistData ? '예' : '', 결재행: apprId }), ex || {}));
   loading(true);
   try {
         const _cur = await api('/sites/'+siteId+'/lists/'+LIST_APR+'/items/'+apprId+'?$expand=fields');
     if(_cur.fields.Status !== '대기'){showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','⚠️');await loadApprovalQueue();return;}
+    _lgF = _cur.fields;
 await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH', {
       fields: aacPatchWith({ Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }, _cur.fields)
     });
+    _lgW = true;
     // 체크리스트 응답 SharePoint 저장
     if (checklistData && action === '승인') {
       try {
@@ -2442,6 +2473,7 @@ await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH
     }
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
+      _lgRes = '반려 — 신청 반려';
     } else {
       // 현재 reqId의 모든 결재자 조회
       // 해당 reqId 결재자 조회 - 페이지네이션으로 전체 확보
@@ -2471,6 +2503,7 @@ await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH
         // 다음 잠긴 결재자 활성화 → 아직 결재 남아있음
         await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + locked[0].id, 'PATCH', { fields: { Status: '대기' } });
         console.log('다음 결재자 활성화:', locked[0].fields.ApprovalOrder, '차');
+        _lgRes = '승인 — ' + (locked[0].fields.ApprovalOrder ?? '') + '차 결재자에게 넘김';
       }
 
       if (pending.length === 0) {
@@ -2492,19 +2525,26 @@ await api('/sites/' + siteId + '/lists/' + LIST_APR + '/items/' + apprId, 'PATCH
           console.log('✅ 최종 승인 후처리 완료');
         } catch(e) {
           console.error('❌ 승인 후처리 오류:', e);
+          _lgPost = '오류 — ' + logErrText(e);   // 감사 기록에 함께 남긴다(10-15)
           fppMsg('⚠️ 오류: ' + e.message);
           await new Promise(r=>setTimeout(r,2000));
         } finally {
           fppHide();
           await api('/sites/' + siteId + '/lists/' + LIST_REQ + '/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
         }
+        _lgRes = '승인 — 최종 승인(신청 승인완료)';
       }
     }
+    _lg(_lgAct, _lgRes || '승인', _lgRes.indexOf('최종 승인') >= 0 ? { 후처리: _lgPost || '완료' } : null);
     alert(action + ' 처리되었습니다.');
     closeModal(); // 상세 모달 닫기
     await loadApprovalQueue();
     await checkApprovalBadge();
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) {
+    if (_lgW && !_lgRes) _lg(_lgAct, '결재행은 기록됨 · 이후 단계 오류 — ' + logErrText(e));   // APS 와 같은 문구
+    else if (!_lgW) _lg(_lgAct + ' 실패', '처리 안 함', { 오류: logErrText(e) });
+    alert('오류: ' + e.message);
+  }
   finally { loading(false); }
 }
 
@@ -2744,6 +2784,7 @@ async function regenerateRecord() {
     } else {
       await apiWithRetry('/sites/' + siteId + '/lists/ApprovalRecords/items', 'POST', { fields }, RECORD_RETRIES);
     }
+    logChange('SCC', '무결성 기록 재생성', () => ({ 신청번호: reqId, 방식: mode, 파일: String(file.name || '').slice(0, 200) }));   // 관리자 데이터 변경 기록(10-15)
     out.style.color = '#107c10';
     out.innerHTML = '✅ 무결성 기록 ' + mode + ' 완료 — Contract #' + reqId + ' · ' + esc(file.name) +
       '<br><span style="font-family:monospace;font-size:.72rem;font-weight:400">SHA-256 ' + hashHex + '</span>';
@@ -2751,6 +2792,7 @@ async function regenerateRecord() {
   } catch (e) {
     out.style.color = '#a4262c'; out.textContent = '❌ ' + (e.message || e);
     console.error('[재생성] 실패:', e);
+    logChange('SCC', '무결성 기록 재생성 실패', () => ({ 신청번호: reqId, 오류: logErrText(e) }));
   }
 }
 
@@ -2948,7 +2990,8 @@ async function exportAdminExcel() {
     (i.fields.ContractPartner||'').toLowerCase().includes(filterPartner));
 
   if (items.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
-  logAction('SCC', 'Excel 내보내기', { 건수: items.length, 필터: { 상태: filterStatus||'전체', 검색어: filterSearch||'', 거래처: filterPartner||'' } });
+  // 출력 기록은 파일을 만든 뒤로 옮겼다(10-15) — 예전에는 만들기 전에 「성공」 으로 남아 실패해도 흔적이 없었다
+  const _xlLog = () => ({ 건수: items.length, 필터: { 상태: filterStatus||'전체', 검색어: filterSearch||'', 거래처: filterPartner||'' } });
 
   // 결재 이력 일괄 조회
   loading(true, '📊 Excel 생성 중...', '결재 이력 조회 중입니다. 잠시만 기다려주세요.');
@@ -3138,7 +3181,9 @@ async function exportAdminExcel() {
     const now = new Date(new Date().getTime() + 9*3600*1000); // KST
     const dateStr = now.getUTCFullYear() + String(now.getUTCMonth()+1).padStart(2,'0') + String(now.getUTCDate()).padStart(2,'0') + '_' + String(now.getUTCHours()).padStart(2,'0') + String(now.getUTCMinutes()).padStart(2,'0');
     XLSX.writeFile(wb, 'SCC_Export_' + dateStr + '.xlsx');
+    logChange('SCC', 'Excel 내보내기', _xlLog);
   } catch(e) {
+    logChange('SCC', 'Excel 내보내기 실패', () => Object.assign(_xlLog(), { 오류: logErrText(e) }));
     alert('Excel 생성 실패: ' + e.message);
   } finally {
     loading(false);
@@ -3948,10 +3993,11 @@ async function submitForm() {
       return;   // 입력 내용은 그대로 둔다 — 확인 후 다시 제출할 수 있게
     }
 
+    logChange('SCC', '상신', () => ({ 신청번호: reqId, 제목: 'SCC-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId, 유형: fields.ContractCompanyType || '', 결재단계: _aprCreated.length }));   // 10-15
     alert('✅ 신청이 완료되었습니다! (번호: ' + reqId + ')');
     resetForm();
     switchTab('list');
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) { logChange('SCC', '상신 실패', () => ({ 오류: logErrText(e) })); alert('오류: ' + e.message); }
   finally { loading(false); const btn=document.getElementById('btn-submit'); if(btn){btn.disabled=false;btn.textContent='제출';btn.style.background='';} }
 }
 
@@ -4487,6 +4533,10 @@ async function uniConfirmApproval() {
   _uniPending = null;
   const lists = _UNI_LIST_MAP[sysKey] || {};
   if (!lists.apr) { alert('알 수 없는 시스템: ' + sysKey); return; }
+  // 결재 처리 기록(10-15) — APS 통합 결재함처럼 이 화면(SCC) 폴더에 남기고 「시스템」 으로 어느 시스템 결재인지 적는다
+  const _lgAct = action==='반려' ? '결재 반려' : '결재 승인';
+  let _lgF = null, _lgW = false;
+  const _lg = (what, res, ex) => logChange('SCC', what, () => Object.assign({ 시스템: sysKey, 경로: 'SCC 통합 결재함', 신청번호: Number(reqId), 결과: res }, logAprDetail(_lgF, { 의견글자수: String(comment||'').length, 목록: lists.apr, 결재행: apprId }), ex || {}));
   loading(true);
   try {
     /* 통합 결재함 경로도 대리 기록을 남긴다. 여기에는 현재 행 조회가 없었으므로
@@ -4497,22 +4547,30 @@ async function uniConfirmApproval() {
       showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','\u26A0\uFE0F');
       return;
     }
+    _lgF = _uCur.fields;
     await api('/sites/'+siteId+'/lists/'+lists.apr+'/items/'+apprId, 'PATCH', {
       fields: aacPatchWith({Status: action==='승인'?'승인':action, ApprovalDate: new Date().toISOString(), Comment: comment}, _uCur.fields)
     });
+    _lgW = true;
     if (action === '반려') {
       await api('/sites/'+siteId+'/lists/'+lists.req+'/items/'+reqId, 'PATCH', {fields:{Status:'반려'}});
+      _lg(_lgAct, '반려 — 신청 반려');
     } else {
       const all = await apiAll('/sites/'+siteId+'/lists/'+lists.apr+'/items?$expand=fields&$top=500');
       const next = all.value.filter(i => Number(i.fields.RequestID)===Number(reqId) && (i.fields.Status||'').trim()==='대기(잠김)')
                             .sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
       if (next.length) await api('/sites/'+siteId+'/lists/'+lists.apr+'/items/'+next[0].id, 'PATCH', {fields:{Status:'대기'}});
       else await api('/sites/'+siteId+'/lists/'+lists.req+'/items/'+reqId, 'PATCH', {fields:{Status:'승인완료'}});
+      _lg(_lgAct, next.length ? '승인 — ' + (next[0].fields.ApprovalOrder ?? '') + '차 결재자에게 넘김' : '승인 — 최종 승인(신청 승인완료)');
     }
     closeModal();
     setTimeout(() => loadUnifiedData(), 600);
     setTimeout(() => loadUnifiedBadge(), 1200);
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) {
+    if (_lgW) _lg(_lgAct, '결재행은 기록됨 · 이후 단계 오류 — ' + logErrText(e));
+    else _lg(_lgAct + ' 실패', '처리 안 함', { 오류: logErrText(e) });
+    alert('오류: ' + e.message);
+  }
   finally { loading(false); }
 }
 
@@ -4535,10 +4593,12 @@ async function withdrawRequest(e, reqId, aprList, reqList) {
       api('/sites/'+siteId+'/lists/'+aprList+'/items/'+i.id, 'PATCH', {fields:{Status:'철회(잠김)'}})
     ));
     await api('/sites/'+siteId+'/lists/'+reqList+'/items/'+reqId, 'PATCH', {fields:{Status:'철회'}});
+    logChange('SCC', '철회', () => ({ 신청번호: Number(reqId), 처리: '본인', 결재행: myAprs.length }));   // 10-15
     if(typeof showAlert === 'function') showAlert('철회 완료','신청이 철회되었습니다.','✅');
     else alert('신청이 철회되었습니다.');
     loadMyList();
   } catch(err) {
+    logChange('SCC', '철회 실패', () => ({ 신청번호: Number(reqId), 오류: logErrText(err) }));
     alert('오류: ' + err.message);
   }
 }
