@@ -654,7 +654,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
   var av = document.getElementById('aps-av'), av2 = document.getElementById('aps-av2'), nm = document.getElementById('aps-acct-nm');
   function draw() {
     var full = ((src.querySelector('.hdr-user-name') || src).textContent || '').trim();
-    var en = full.match(/\(([A-Za-z][A-Za-z .'-]*)\)\s*$/);                 // 「… (Jimmy Lee)」
+    var en = full.match(/\(([A-Za-z][A-Za-z .'-]*)\)\s*$/);                 // 「… (Gildong Hong)」
     var latin = /^[A-Za-z]/.test(full);                                      // 영문만 있는 이름(John Smith) 은 앞 두 단어 · 두 글자 이니셜
     var short = en ? en[1].trim() : (latin ? full.split(/\s+/).slice(0, 2).join(' ') : (full.split(/\s+/)[0] || ''));
     var ini = (en || latin) ? short.split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase() : short.slice(0, 1);
@@ -955,7 +955,7 @@ window.apsYear = (function () {
       </div>
 
       <!-- 4차: Controlling 팀장 — Sales 전용 조건부 -->
-      <div class="appr-block appr-fixed" id="appr-block-jungho" style="display:none">
+      <div class="appr-block appr-fixed" id="appr-block-a4s" style="display:none">
         <div class="appr-block-title">4차 결재자<span class="appr-tag auto">자동 지정</span> <span class="hint">— Controlling 팀장 (Sales Type 시 추가)</span></div>
         <div class="appr-info">
           <input type="text"  id="cfg-a4s-name"  value="" readonly placeholder="이름">
@@ -1099,13 +1099,14 @@ const LIST_CL     = 'SCC_ChecklistResponses'; // 결재자 체크리스트 응�
 const ADMIN_EMAILS = [];
 let _configLoaded = false;   // 설정 확인이 끝났다(읽음 · 못 읽음 모두, 10-15) — 관리자 탭은 이 뒤에 판정한다
 let _cfgFailed = false;      // 설정 파일을 못 읽었다(10-15) — 관리자 0명으로 본다
-// 고정 결재자
-const A3  = { name: 'Junsoon Lee (TEST)', email: '', role: '3차결재자(Compliance Head)', order: 3 };
-const A4S = { name: 'Junsoon Lee (TEST)', email: '', role: '4차결재자(Controlling Head)', order: 4 }; // Sales 전용
-const A5  = { name: 'Junsoon Lee (TEST)', email: '', role: '5차결재자(Accounting Head)', order: 5 };
-const A6  = { name: 'Junsoon Lee (TEST)', email: '', role: '6차결재자(CFO)',                 order: 6 };
+// 고정 결재자 — system_config_final.xlsx 의 SCC_COMPLIANCE · SCC_CONTROLLING · SCC_ACCOUNTING · SCC_CFO · SCC_RD 로만 채운다.
+// 10-16 실명 기본값을 뺐다 — 키가 없으면 빈 값으로 남고, 상신 때 안내하고 막는다(주인 없는 결재행을 만들지 않게).
+const A3  = { name: '', email: '', role: '3차결재자(Compliance Head)', order: 3 };
+const A4S = { name: '', email: '', role: '4차결재자(Controlling Head)', order: 4 }; // Sales 전용
+const A5  = { name: '', email: '', role: '5차결재자(Accounting Head)', order: 5 };
+const A6  = { name: '', email: '', role: '6차결재자(CFO)',                 order: 6 };
 // A7(CEO)는 결재 라인에서 제거됨 (2026-07-25)
-const ARD = { name: 'Junsoon Lee (TEST)', email: '', role: 'RD (최종)',                     order: 99 }; // TEST
+const ARD = { name: '', email: '', role: 'RD (최종)',                     order: 99 };
 
 let msalApp = null, user = null, siteId = null;
 /* ── 결재 대리(AAC) — 내가 대리인으로 받은 위임 ─────────────────────────
@@ -1398,7 +1399,7 @@ function esc(s) {
 /* ── 대리 처리 표기 (AAC 연동) ────────────────────────────────────────
    AAC(결재 대리 지정)가 대리인이 처리한 결재행의 ApproverRole 뒤에
    '· 대리(이름 <메일>)' 를 덧붙인다. 그 꼬리를 그대로 화면에 뿌리면
-   '1차결재자 · 대리(Jimmy Lee <jimmy.lee@hyosung.com>)' 처럼 날값이 노출된다.
+   '1차결재자 · 대리(Gildong Hong <hong.gildong@hyosung.com>)' 처럼 날값이 노출된다.
    본래 역할만 남기고, 대리였다는 사실은 알약으로 따로 보여준다.
    IT-Ticket(1877행 부근)·Goodwill-Approval·aps 와 같은 표기·같은 색이다.
    대리가 아니면 aacRolePill 이 빈 문자열을 돌려주므로 호출부에 조건이 필요 없다. */
@@ -3549,8 +3550,8 @@ function updateApproverBlocks() {
     .map(cb => cb.value.toLowerCase());
   const needChop = checked.some(v => v.includes('corporate chop') || v === 'chop only');
 
-  // 4차: Jungho Yoo — Sales일 때만
-  const bJ = document.getElementById('appr-block-jungho');
+  // 4차: Controlling Head(SCC_CONTROLLING) — Sales일 때만
+  const bJ = document.getElementById('appr-block-a4s');
   if (bJ) bJ.style.display = isSales ? 'block' : 'none';
 
   // Accounting 차수 표시 업데이트
@@ -3818,6 +3819,18 @@ async function submitForm() {
   }
   if (_totalMB > MAX_FILE_MB) { alert('첨부파일 전체 합계(' + _totalMB.toFixed(1) + 'MB)가 ' + MAX_FILE_MSG + '을 초과합니다.'); return; }
   if (!document.getElementById('a1-email').value) { alert('1차 결재자 (Line Manager)를 지정해주세요.'); return; }
+  // 자동 지정 결재자(설정 파일) — 이번 결재선에 들어갈 사람 중 메일이 비면 주인 없는 결재행이 생기므로 막는다(10-16, FA 09-30 과 같은 방식)
+  {
+    const _isSales = (document.getElementById('sel-type').value || '') === 'Sales';
+    const _sign = Array.from(document.querySelectorAll('#tab-form .sign-opts input:checked')).map(cb => (cb.value || cb.parentElement.textContent.trim()).toLowerCase()).join(' ');
+    const _chop = _sign.includes('corporate chop') || _sign.includes('chop only');
+    const _need = [['Compliance Head(SCC_COMPLIANCE)', A3]];
+    if (_isSales) _need.push(['Controlling Head(SCC_CONTROLLING)', A4S]);
+    _need.push(['Accounting Head(SCC_ACCOUNTING)', A5]);
+    if (_chop) _need.push(['CFO(SCC_CFO)', A6], ['RD(SCC_RD)', ARD]);
+    const _miss = _need.filter(x => !(x[1].email || '').trim()).map(x => x[0]);
+    if (_miss.length) { alert('자동 지정 결재자 설정을 읽지 못했습니다: ' + _miss.join(', ') + '\n\n새로고침 후 다시 시도해 주세요. 계속되면 system_config_final.xlsx 의 해당 KEY 를 확인하거나 IT팀(stk_it@hyosung.com)에 알려 주세요.'); return; }
+  }
 
   // validation 통과 후 버튼 disable
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '제출 중...'; submitBtn.style.background = '#a0aec0'; }
@@ -3959,7 +3972,7 @@ async function submitForm() {
         approvers.push({ name: document.getElementById('a2-name').value, email: document.getElementById('a2-email').value, role: '2차결재자(Department Head)', order: 2 });
       }
       approvers.push(A3); // 3차: Compliance Director (고정)
-      if (isSales) approvers.push(A4S); // 4차: Jungho Yoo — Sales 전용
+      if (isSales) approvers.push(A4S); // 4차: Controlling Head(SCC_CONTROLLING) — Sales 전용
       const acctOrder = isSales ? 5 : 4;
       approvers.push({ ...A5, order: acctOrder, role: acctOrder+'차결재자(Accounting Head)' });
       if (needChopApprovers) {
@@ -3967,7 +3980,7 @@ async function submitForm() {
         approvers.push({ ...A6, order: acctOrder+1, role: (acctOrder+1)+'차결재자(CFO)' });
         approvers.push({ ...ARD, order: acctOrder+2, role: (acctOrder+2)+'차결재자(RD)' });
       }
-      // chop 조건 없으면 Gina Shin이 마지막 (RD 추가 안 함)
+      // chop 조건 없으면 Accounting Head(SCC_ACCOUNTING)가 마지막 (RD 추가 안 함)
 
       _stage = 'approvers';
       for (const a of approvers) {
