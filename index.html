@@ -411,6 +411,48 @@ html, * { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; background-clip: padding-box; }
+
+/* Contract Partner — BP Master 검색(11-04 · Procurement 「추천 공급업체」 와 같은 알약 · 같은 창 · 같은 결과 카드) */
+.lbl-row{display:flex;flex-wrap:wrap;align-items:center;column-gap:10px;row-gap:5px}
+.lbl-row > label{margin-bottom:0}
+.bpm-pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 10px 0 8px;border:1px solid #c7e0f4;border-radius:999px;background:#f0f6ff;color:#0b5fa5;font-size:11.5px;font-weight:600;font-family:inherit;line-height:1;letter-spacing:-.1px;cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s,color .12s,box-shadow .12s}
+.bpm-pill .bpm-ico{flex:none;font-size:10.5px;line-height:1;transform:translateY(-.5px)}
+.bpm-pill:hover{background:#e1effb;border-color:#8cbde8;color:#005a9e}
+.bpm-pill:active{background:#d3e7f8}
+.bpm-pill:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(0,120,212,.28);border-color:#0078d4}
+.bpm-pill:disabled{background:#f3f2f1;border-color:#e1dfdd;color:#a19f9d;cursor:not-allowed}
+.bpm-pill:disabled .bpm-ico{filter:grayscale(1);opacity:.55}
+.sup-src{font-size:11px;color:#8a8886;min-height:1em;line-height:1.5}
+.sup-src .k{color:#0b5fa5;background:#e1f0ff;border-radius:9px;padding:0 7px;font-weight:600;font-size:10px;margin-right:2px}
+.sup-src .m{color:#8a8886;background:#f3f2f1;border-radius:9px;padding:0 7px;font-size:10px;margin-right:2px}
+#scc-bp-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:990;align-items:center;justify-content:center;padding:20px}
+#scc-bp-ov.on{display:flex}
+.bpm{background:#fff;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,.22);width:100%;max-width:500px;max-height:75vh;overflow-y:auto;font-family:'Segoe UI',sans-serif}
+.bpm-hd{padding:14px 18px;background:#0078d4;color:#fff;display:flex;justify-content:space-between;align-items:center;font-weight:700;border-radius:8px 8px 0 0;position:sticky;top:0;z-index:1}
+.bpm-hd span{display:inline-flex;align-items:center;gap:8px}
+.bpm-hd button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;line-height:1;padding:0 2px}
+.bpm-bd{padding:16px 18px}
+.bpm-sb{display:flex;gap:6px;margin-bottom:12px}
+.bpm-sb input{flex:1;border:1px solid #d2d0ce;border-radius:4px;padding:7px 10px;font-size:.78rem;min-width:0}
+.bpm-sb button{padding:7px 14px;border:none;border-radius:4px;background:#0078d4;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bpm-sb button:hover{background:#005a9e}
+.bp-it{padding:9px 12px;border:1px solid #edebe9;border-radius:4px;margin-bottom:5px;cursor:pointer;transition:all .15s;outline:none}
+.bp-it:hover,.bp-it:focus{background:#f0f6ff;border-color:#0078d4}
+.bp-it .c{font-size:11px;color:#a19f9d}
+.bp-it .n{font-size:13px;font-weight:600;color:#323130;overflow-wrap:anywhere}
+.bp-it .s{font-size:11px;color:#605e5c;overflow-wrap:anywhere}
+.bp-it .s .ac{white-space:nowrap}
+.bp-inact{background:#fde7e9;color:#a4262c;border-radius:8px;padding:0 6px;font-size:10px;font-weight:700}
+.bp-more{font-size:11px;color:#a19f9d;padding:4px 12px;border-bottom:1px solid #edebe9;margin-bottom:5px}
+.bp-empty{text-align:center;padding:20px;color:#a19f9d;font-size:.8rem}
+.bp-audit{display:flex;align-items:center;gap:4px;margin:-6px 0 10px;font-size:9.5px;font-weight:400;color:#605e5c;line-height:1.3}
+.bp-audit svg{flex:0 0 auto}
+.bp-start{text-align:center;padding:26px 12px 22px;color:#605e5c}
+.bp-start svg{color:#c8c6c4;margin-bottom:8px}
+.bp-start .t{font-size:.82rem;font-weight:600;color:#323130}
+.bp-start .m{font-size:.72rem;color:#8a8886;margin-top:5px;line-height:1.5}
+.bp-hint{font-size:.74rem;color:#a4262c;padding:10px 4px}
+.bp-foot{font-size:11px;color:#a19f9d;margin-top:8px}
 </style>
 <style>
 /* 결재 딥링크(?tab=approval&id=)로 들어오면 작성 화면이 1~2초 보였다가 상세 팝업이 떴다(2026-09-21 지적).
@@ -859,8 +901,9 @@ window.apsYear = (function () {
       </div>
       <div class="form-row full">
         <div class="form-group">
-          <label>Contract Partner <span class="req">*</span></label>
-          <input type="text" id="f-partner">
+          <div class="lbl-row"><label for="f-partner">Contract Partner <span class="req">*</span></label><button type="button" class="bpm-pill" id="scc-bp-btn" title="BP Master 에서 계약 상대방 고르기" onclick="sccBpOpen()"><span class="bpm-ico" aria-hidden="true">🔍</span>BP Master 검색</button></div>
+          <input type="text" id="f-partner" placeholder="업체명 / BP 코드 — BP Master 에서 고르거나 직접 입력" autocomplete="off" oninput="sccBpRender()">
+          <div class="sup-src" id="scc-bp-src"></div>
         </div>
       </div>
       <div class="form-row full">
@@ -5058,6 +5101,171 @@ body.aps-year-off #aps-year-empty{display:block!important}
 </style>
 
 
+<!-- Contract Partner — BP 검색(11-04 · Procurement 「추천 공급업체」 와 같은 창 · Employee 제외) -->
+<div id="scc-bp-ov" onclick="if(event.target===this)sccBpClose()">
+  <div class="bpm" role="dialog" aria-modal="true" aria-label="BP 검색">
+    <div class="bpm-hd"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>BP 검색 (Vendor / Customer)</span><button type="button" onclick="sccBpClose()" aria-label="닫기">✕</button></div>
+    <div class="bpm-bd">
+      <div class="bpm-sb">
+        <input type="text" id="scc-bp-q" aria-label="BP 검색어" placeholder="BP 코드 · 이름 · 사업자등록번호 · 계좌 끝 4자리" maxlength="60" oninput="sccBpTyping()" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.keyCode!==229){event.preventDefault();sccBpSearch(this.value)}" autocomplete="off">
+        <button type="button" onclick="sccBpSearch(document.getElementById('scc-bp-q').value)">검색</button>
+      </div>
+      <div class="bp-audit"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#c4314b" stroke-width="2.2" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>검색 이력은 Logging 시스템에 보관됩니다 · Search history is logged</span></div>
+      <div id="scc-bp-res"></div>
+      <div class="bp-foot">목록에 없는 업체(신규 등)는 창을 닫고 칸에 직접 입력하세요.</div>
+    </div>
+  </div>
+</div>
+<script>
+/* ── Contract Partner — BP Master 검색(11-04) ─────────────────────────────────────────────────────────────
+   Procurement 「추천 공급업체 · BP Master 검색」 과 같은 파일 · 같은 검색 · 같은 결과 카드.
+   파일: STK-DB 문서 루트의 BP-Master_목록_20260930_1756.xlsx(없으면 루트의 BP-Master_목록*.xlsx 중 이름이 가장 큰 것) — ACC Others BP Master 가 관리하는 파일.
+         열: A Code · B 유형 · C Name 1 · D 한글이름 · E 사업자등록번호 · F Bank · G Account no. · H 상태(「비활성」).
+   · 처음 「BP Master 검색」 을 누를 때 한 번 읽는다(화면을 열 때마다 읽지 않음). Employee(개인 BP)는 뺀다.
+   · 열면 목록을 보여 주지 않고, 2자 이상(숫자만이면 4자리 이상) 쓰고 Enter · 「검색」 일 때만 찾는다. 결과는 최대 50건.
+   · 고르면 칸에 「NAME / CODE」. 저장은 ContractPartner 글자 그대로(새 열 없음). 목록에 없는 업체는 직접 입력 — 칸 아래에 작게 「직접 입력」.
+   · 비활성 BP 도 고를 수 있다(한 번 확인). 은행 · 계좌는 창에 끝 4자리만 보여 주고 저장 · 기록하지 않는다.
+   · 기록: 검색마다 「BP 검색」(검색어 · 결과 건수), 고르면 「BP 검색 선택」(BP 코드 · 이름) — Logging_data(IT 운영 계정 규칙 그대로).
+   · 파일을 못 읽으면 검색 단추를 끄고 직접 입력 안내만(상신은 막지 않음). */
+(function () {
+  'use strict';
+  var BP_FILE_NAME = 'BP-Master_목록_20260930_1756.xlsx';
+  var BP_FILE_PATTERN = /^BP-Master_목록.*\.xlsx$/i;
+  var MAX = 50;
+  var BPM = { loaded: false, failed: false, loading: null, list: [] };
+  var picked = null, lastQ = '';
+  var $ = function (id) { return document.getElementById(id); };
+  var h = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  function audit(action, detail) { try { if (typeof logAction === 'function') logAction('SCC', action, detail); } catch (x) {} }
+
+  async function docDriveId() {
+    var d = await api('/sites/' + siteId + '/drives');
+    var x = (d.value || []).find(function (v) { return ['Documents', '문서', 'Shared Documents'].indexOf(v.name) >= 0; }) || (d.value || [])[0];
+    if (!x) throw new Error('문서 라이브러리를 찾지 못함');
+    return x.id;
+  }
+  function load() {
+    if (BPM.loading) return BPM.loading;
+    BPM.loading = (async function () {
+      try {
+        var t = await token(), driveId = await docDriveId(), item = null;
+        try { var meta = await api('/drives/' + driveId + '/root:/' + encodeURIComponent(BP_FILE_NAME) + ':?$select=id,name'); if (meta && meta.id) item = meta; } catch (x) {}
+        if (!item) {
+          var ch = await api('/drives/' + driveId + '/root/children?$select=id,name,lastModifiedDateTime,file&$top=500');
+          item = (ch.value || []).filter(function (f) { return f.file && BP_FILE_PATTERN.test(String(f.name || '').normalize('NFC')); })
+            .sort(function (a, b) { return String(b.name).localeCompare(String(a.name)) || String(b.lastModifiedDateTime || '').localeCompare(String(a.lastModifiedDateTime || '')); })[0] || null;
+        }
+        if (!item) throw new Error('BP 파일을 찾을 수 없음');
+        var res = await fetch(GRAPH + '/drives/' + driveId + '/items/' + item.id + '/content', { headers: { Authorization: 'Bearer ' + t } });
+        if (!res.ok) throw new Error('BP 파일 내려받기 실패 (' + res.status + ')');
+        var wb = XLSX.read(await res.arrayBuffer(), { type: 'array' });
+        var sh = wb.SheetNames.find(function (x) { return x === 'BP Master'; }) || wb.SheetNames[0];
+        var rows = XLSX.utils.sheet_to_json(wb.Sheets[sh], { header: 1, raw: true, defval: '' });
+        var list = [];
+        for (var i = 1; i < rows.length; i++) {
+          var r = rows[i] || [];
+          var code = String(r[0] || '').trim(), type = String(r[1] || '').trim(), n1 = String(r[2] || '').trim(), n2 = String(r[3] || '').trim();
+          if (!code || !(n1 || n2) || /^(bp )?code$/i.test(code) || /^employee$/i.test(type)) continue;
+          var acct = String(r[6] || '').replace(/\D/g, '');
+          list.push({ code: code, type: type, name: n1 || n2, nameKo: n1 ? n2 : '', bizNo: String(r[4] || '').trim(), bank: String(r[5] || '').trim(),
+            acctLast4: acct.length >= 4 ? acct.slice(-4) : '', inactive: /^비활성$/.test(String(r[7] || '').trim()) });
+        }
+        if (!list.length) throw new Error('BP 목록이 비어 있음');
+        BPM.list = list; BPM.failed = false;
+        console.log('[BP Master] Loaded:', list.length, '(' + item.name + ')');
+      } catch (x) {
+        BPM.failed = true; BPM.list = [];
+        console.warn('[BP Master] 로드 실패 — Contract Partner 는 직접 입력:', x && x.message);
+      }
+      BPM.loaded = true;
+      render();
+      if ($('scc-bp-ov').classList.contains('on')) {
+        if (BPM.failed) $('scc-bp-res').innerHTML = '<div class="bp-empty">BP 목록을 불러오지 못했습니다 — 창을 닫고 칸에 직접 입력해 주세요.</div>';
+        else if (lastQ) search(lastQ);
+      }
+    })();
+    return BPM.loading;
+  }
+  // 칸 아래 표시 — BP Master 에서 고른 값이면 코드 · 유형(비활성), 아니면 「직접 입력」
+  function render() {
+    var el = $('scc-bp-src'), btn = $('scc-bp-btn'), inp = $('f-partner');
+    if (!el || !inp) return;
+    if (btn) btn.disabled = BPM.failed;
+    var v = inp.value.trim();
+    var s = picked && v === picked.text ? picked : null;
+    if (!s && v && BPM.list.length) { var m = / \/ ([^/]+)$/.exec(v); if (m) { var b = BPM.list.find(function (x) { return x.code === m[1].trim() && v === x.name + ' / ' + x.code; }); if (b) s = b; } }
+    if (s) el.innerHTML = '<span class="k">BP Master</span> ' + h(s.code) + ' · ' + h(s.type || '-') + (s.inactive ? ' <span class="bp-inact">비활성</span>' : '');
+    else if (v) el.innerHTML = '<span class="m">직접 입력</span>' + (BPM.failed ? ' BP 목록을 불러오지 못했습니다' : '');
+    else el.innerHTML = BPM.failed ? 'BP 목록을 불러오지 못해 직접 입력합니다 — 업체명 / BP 코드' : '';
+  }
+  function startHtml() {
+    return '<div class="bp-start"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>' +
+      '<div class="t">BP 코드 · 이름 · 사업자등록번호 · 계좌 끝 4자리로 검색해 주세요</div><div class="m">2자 이상 입력 후 Enter 또는 「검색」을 눌러 주세요.</div></div>';
+  }
+  function open() {
+    if (BPM.failed) return;
+    lastQ = '';
+    var q = $('scc-bp-q'); q.value = '';
+    $('scc-bp-res').innerHTML = startHtml();
+    $('scc-bp-ov').classList.add('on');
+    load();
+    setTimeout(function () { q.focus(); }, 50);
+  }
+  function close() { $('scc-bp-ov').classList.remove('on'); var b = $('scc-bp-btn'); if (b) b.focus(); }
+  function typing() {
+    var q = $('scc-bp-q'), el = $('scc-bp-res');
+    if (!String(q.value || '').trim()) { lastQ = ''; el.innerHTML = startHtml(); return; }
+    if (el.querySelector('.bp-hint')) el.innerHTML = lastQ ? '' : startHtml();
+  }
+  function search(q) {
+    var el = $('scc-bp-res');
+    var raw = String(q || '').trim(), kw = raw.toLowerCase(), kd = /^[0-9\s-]+$/.test(kw) ? kw.replace(/\D/g, '') : '';
+    if (kd ? kd.length < 4 : kw.length < 2) { el.innerHTML = '<div class="bp-hint">' + (kd ? '숫자만으로 찾을 때는 4자리 이상 입력해 주세요.' : '2자 이상 입력해 주세요.') + '</div>'; return; }
+    lastQ = raw;
+    if (!BPM.loaded) { el.innerHTML = '<div class="bp-empty">데이터 로딩 중...</div>'; load(); return; }
+    if (BPM.failed) { el.innerHTML = '<div class="bp-empty">BP 목록을 불러오지 못했습니다 — 창을 닫고 칸에 직접 입력해 주세요.</div>'; return; }
+    var dg = function (v) { return String(v || '').replace(/\D/g, ''); };
+    var hit = BPM.list.filter(function (b) {
+      return b.code.toLowerCase().indexOf(kw) >= 0 || b.name.toLowerCase().indexOf(kw) >= 0 || (b.nameKo && b.nameKo.toLowerCase().indexOf(kw) >= 0) ||
+        (b.bizNo && b.bizNo.toLowerCase().indexOf(kw) >= 0) || (kd.length >= 4 && dg(b.bizNo).indexOf(kd) >= 0) || (kd.length === 4 && b.acctLast4 === kd);
+    });
+    audit('BP 검색', { 검색어: raw.slice(0, 60), '결과 건수': hit.length, 화면: 'SCC · Contract Partner' });
+    if (!hit.length) { el.innerHTML = '<div class="bp-empty">검색 결과 없음 — 목록에 없는 업체는 창을 닫고 직접 입력하세요.</div>'; return; }
+    var out = hit.slice(0, MAX);
+    el.innerHTML = (hit.length > MAX ? '<div class="bp-more">' + hit.length + '건 중 ' + MAX + '건 표시 — 검색어를 더 구체적으로 입력해 주세요</div>' : '') + out.map(function (b) {
+      return '<div class="bp-it" data-bp="' + h(b.code) + '" tabindex="0" role="button">' +
+        '<div class="c">' + h(b.code) + ' · ' + h(b.type || '-') + (b.inactive ? ' <span class="bp-inact">비활성</span>' : '') + '</div>' +
+        '<div class="n">' + h(b.name) + '</div>' + (b.nameKo ? '<div class="s">' + h(b.nameKo) + '</div>' : '') +
+        '<div class="s">사업자등록번호: ' + h(b.bizNo || 'Master data 미기재') + '</div>' +
+        '<div class="s">Bank Info.: ' + h(b.bank || 'Master data 미기재') + ' &nbsp;|&nbsp; <span class="ac">Account No.: ' + h(b.acctLast4 ? '****' + b.acctLast4 : 'Master data 미기재') + '</span></div></div>';
+    }).join('');
+  }
+  function select(code) {
+    var b = BPM.list.find(function (x) { return x.code === code; });
+    if (!b) return;
+    if (b.inactive && !confirm('비활성 BP 입니다 (' + b.code + ', ' + b.name + '). 그래도 Contract Partner 로 지정할까요?')) return;
+    var text = b.name + ' / ' + b.code;
+    var inp = $('f-partner'); inp.value = text;
+    try { inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); } catch (x) {}
+    picked = { code: b.code, name: b.name, type: b.type, inactive: b.inactive, text: text };
+    audit('BP 검색 선택', { 'BP 코드': b.code, 이름: b.name, 검색어: String(lastQ || '').slice(0, 60), 화면: 'SCC · Contract Partner' });
+    close();
+    render();
+  }
+  document.addEventListener('click', function (ev) { var it = ev.target && ev.target.closest && ev.target.closest('#scc-bp-res .bp-it[data-bp]'); if (it) select(it.getAttribute('data-bp')); });
+  document.addEventListener('keydown', function (ev) {
+    var ov = $('scc-bp-ov'); if (!ov || !ov.classList.contains('on')) return;
+    if (ev.key === 'Escape') close();
+    else if (ev.key === 'Enter' && ev.target && ev.target.matches && ev.target.matches('#scc-bp-res .bp-it')) select(ev.target.getAttribute('data-bp'));
+  });
+  // 「Reset」 · 상신 뒤 초기화 — 고른 표시도 지운다
+  if (typeof window.resetForm === 'function') {
+    var _reset = window.resetForm;
+    window.resetForm = function () { var r = _reset.apply(this, arguments); picked = null; render(); return r; };
+  }
+  window.sccBpOpen = open; window.sccBpClose = close; window.sccBpSearch = search; window.sccBpTyping = typing; window.sccBpRender = render;
+})();
+</script>
 </body>
 <!-- redeploy3 -->
 </html>
